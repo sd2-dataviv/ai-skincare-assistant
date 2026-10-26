@@ -66,7 +66,7 @@ backend/app
 │   ├── providers.py     OpenAI-compatible chat client (Groq / OpenAI / Ollama)
 │   ├── prompts.py       System prompt builder
 │   └── orchestrator.py  Turn handling, automations, events (approval decided, doctor joined)
-├── integrations/        analysis_engine, d365, messaging, otp_sender, storage (each: interface + mock)
+├── integrations/        analysis_engine, skin_models (WebSocket), d365, messaging, otp_sender, storage (each: interface + mock)
 └── knowledge/           questionnaire.json, catalogue.json, rules.json (versioned clinic knowledge)
 ```
 

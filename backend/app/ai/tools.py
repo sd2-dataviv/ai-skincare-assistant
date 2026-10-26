@@ -177,7 +177,13 @@ async def h_upload_photo(layer: "ActionLayer", s: State, a: dict) -> dict:
 
 async def h_run_analysis(layer: "ActionLayer", s: State, a: dict) -> dict:
     _require(s.visit and s.client, "no_visit", "Start the visit first.")
-    return await analysis_svc.run_analysis(layer.db, s.visit, s.client, s.photos)
+    res = await analysis_svc.run_analysis(layer.db, s.visit, s.client, s.photos)
+    # The chat agent talks to the client: it gets the findings, not the preview (that waits for the doctor) nor the
+    # model's internals (staff see those in review).
+    res.pop("preview", None)
+    model = res.pop("model", None) or {}
+    res["scores_from"] = "skin model" if model.get("status") in ("ok", "partial") else "estimates"
+    return res
 
 
 async def h_get_recommendations(layer: "ActionLayer", s: State, a: dict) -> dict:

@@ -59,34 +59,49 @@ export function StageRail({ step }: { step: number | null }) {
   );
 }
 
-export function AuthedImage({ photoId, alt }: { photoId: string; alt: string }) {
+export function BlobImage({ path, alt, token, auth }: { path: string; alt: string; token?: string | null; auth?: boolean }) {
   const [src, setSrc] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let url: string | null = null;
     let alive = true;
-    fetchBlobUrl(`/photos/${photoId}/file`).then((u) => {
+    setFailed(false);
+    fetchBlobUrl(path, { token, auth }).then((u) => {
       url = u;
       if (alive) setSrc(u);
-    }).catch(() => undefined);
+    }).catch(() => alive && setFailed(true));
     return () => {
       alive = false;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [photoId]);
-  return src ? <img src={src} alt={alt} /> : <img alt={alt} />;
+  }, [path, token, auth]);
+  return src ? <img src={src} alt={alt} /> : <img alt={failed ? `${alt} (couldn't load)` : alt} />;
+}
+
+export function AuthedImage({ photoId, alt }: { photoId: string; alt: string }) {
+  return <BlobImage path={`/photos/${photoId}/file`} alt={alt} />;
 }
 
 const SEVERITY: [number, string][] = [[25, "minimal"], [45, "mild"], [70, "moderate"], [101, "severe"]];
 export const severityOf = (score: number) => SEVERITY.find(([max]) => score < max)![1];
 
-export function Findings({ findings, raised = [] }: { findings: Finding[]; raised?: string[] }) {
+export function Findings({ findings, raised = [], showSource = false }: { findings: Finding[]; raised?: string[]; showSource?: boolean }) {
   return (
     <div className="findings">
       {findings.map((f) => {
         const sev = severityOf(f.score);
         return (
           <div key={f.concern} className={`finding${raised.includes(f.concern) ? " raised" : ""}`}>
-            <span className="name">{f.label.charAt(0).toUpperCase() + f.label.slice(1)}</span>
+            <span className="name">
+              {f.label.charAt(0).toUpperCase() + f.label.slice(1)}
+              {showSource && f.source && (
+                <span className={`src ${f.source}`} title={f.source === "model"
+                  ? `Scored from the skin model's findings${f.count != null ? ` (${f.count} found)` : ""}`
+                  : "Estimate: no skin model covers this yet"}>
+                  {f.source === "model" ? `model${f.count != null ? ` · ${f.count}` : ""}` : "estimate"}
+                </span>
+              )}
+            </span>
             <span className="bar" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(f.score)}
               aria-label={`${f.label}: ${sev}`}>
               <i className={sev} style={{ width: `${f.score}%` }} />

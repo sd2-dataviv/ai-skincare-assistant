@@ -1,0 +1,10 @@
+Sample consultation photos (one woman, visible acne), for testing the photo capture and skin analysis.
+
+front.jpg  Pexels photo 5588000  https://www.pexels.com/photo/5588000/
+left.jpg   Pexels photo 5587981  https://www.pexels.com/photo/5587981/   (head turned to her right: left cheek showing)
+right.jpg  Pexels photo 5587983  https://www.pexels.com/photo/5587983/   (head turned to her left: right cheek showing)
+
+Photographer: Polina Tankilevitch (pexels.com/@polina-tankilevitch). Downloaded 26 October 2026 at 1280 px wide.
+Licence: Pexels licence (https://www.pexels.com/license/): free to use and modify, attribution not required.
+It does not allow showing identifiable people in a bad light, or implying they endorse a product: keep these for
+testing, not for marketing the app.

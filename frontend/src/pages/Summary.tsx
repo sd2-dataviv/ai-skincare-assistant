@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { Appointments, formatDate, PlanList, TopBar } from "../components/Chrome";
 import { api, ApiError } from "../lib/api";
-import type { Appointment, PlanItem } from "../lib/types";
+import { ClientModelPictures } from "../components/ModelPictures";
+import type { Appointment, ImageSource, ModelImageClient, PlanItem } from "../lib/types";
 
 interface SummaryData {
   client_first_name: string;
@@ -20,10 +21,17 @@ interface SummaryData {
   approval_status: string | null;
   next_session_date: string | null;
   appointments?: Appointment[];
+  images?: ModelImageClient[];
   disclaimer: string;
 }
 
-export function Letter({ s }: { s: SummaryData }) {
+const v = (variant?: string) => (variant === "before" ? "?variant=before" : "");
+export const staffImageSrc: ImageSource = (id, variant) => ({ path: `/model-images/${id}/file${v(variant)}` });
+export const clientImageSrc = (token: string | null): ImageSource => (id, variant) => ({ path: `/me/model-images/${id}/file${v(variant)}`, token });
+const sharedImageSrc = (shareToken: string): ImageSource => (id, variant) =>
+  ({ path: `/public/summaries/${shareToken}/images/${id}${v(variant)}`, auth: false });
+
+export function Letter({ s, imageSrc = staffImageSrc }: { s: SummaryData; imageSrc?: ImageSource }) {
   return (
     <article className="letter">
       <header>
@@ -53,6 +61,13 @@ export function Letter({ s }: { s: SummaryData }) {
           </p>
         )}
       </section>
+
+      {!!s.images?.length && (
+        <section className="section">
+          <h2>Your photos</h2>
+          <ClientModelPictures images={s.images} src={imageSrc} />
+        </section>
+      )}
 
       {!!s.appointments?.filter((a) => a.status !== "cancelled").length && (
         <section className="section">
@@ -123,5 +138,5 @@ export function PublicSummary() {
     api<SummaryData>(`/public/summaries/${token}`, { auth: false }).then(setS)
       .catch((e) => setError(e instanceof ApiError ? e.message : "This link isn't available."));
   }, [token]);
-  return <main className="summary-page">{s ? <Letter s={s} /> : <p className={error ? "error-text" : "muted"}>{error ?? "Loading…"}</p>}</main>;
+  return <main className="summary-page">{s ? <Letter s={s} imageSrc={sharedImageSrc(token!)} /> : <p className={error ? "error-text" : "muted"}>{error ?? "Loading…"}</p>}</main>;
 }

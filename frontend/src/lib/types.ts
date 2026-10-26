@@ -86,7 +86,41 @@ export interface Finding {
   concern: string;
   label: string;
   score: number;
+  source?: "model" | "estimate";  // scored from the skin model's findings, or an estimate (no model for it yet)
+  count?: number;
 }
+
+// A picture from the clinic's skin models, as doctors and admins see it.
+export interface ModelImageStaff {
+  id: string;
+  kind: "diagnosis_overlay" | "post_treatment_preview";
+  pose: string;
+  status: "pending" | "ready" | "failed";
+  error: string | null;
+  model: string;
+  has_before: boolean;
+  found: Record<string, number>;
+  face_detected: boolean | null;
+  findings_sent: boolean;
+  warning: string | null;  // e.g. the service didn't report findings, or sent a picture of the wrong size
+  changed: boolean | null;
+  seconds: number | null;
+  caption: string;
+  created_at: string;
+}
+
+// As the client sees it (only after approval).
+export interface ModelImageClient {
+  id: string;
+  kind: "diagnosis_overlay" | "post_treatment_preview";
+  pose: string;
+  has_before: boolean;
+  title: string;
+  caption: string;
+}
+
+// Where a picture's file is fetched from, for the screen showing it (staff, the client's phone, a shared link).
+export type ImageSource = (id: string, variant?: "image" | "before") => { path: string; token?: string | null; auth?: boolean };
 
 export interface CatalogueItem {
   id: string;

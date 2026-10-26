@@ -127,6 +127,30 @@ class Analysis(TimestampMixin, Base):
     visit: Mapped[Visit] = relationship(back_populates="analyses")
 
 
+class ModelImage(TimestampMixin, Base):
+    """A picture made by one of the clinic's skin models from a visit photo.
+
+    diagnosis_overlay: the photo with what the diagnosis model found marked on it.
+    post_treatment_preview: an illustration of the face with the found spots painted out (made in the background;
+    status pending -> ready | failed). Doctors and admins see these in review; the client only once the plan is
+    approved, and the preview always as an illustration, not a promised result.
+    """
+    __tablename__ = "model_images"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
+    visit_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("visits.id", ondelete="CASCADE"), index=True)
+    photo_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("photos.id", ondelete="SET NULL"))
+    kind: Mapped[str] = mapped_column(String(30))  # diagnosis_overlay | post_treatment_preview
+    pose: Mapped[str] = mapped_column(String(10))
+    status: Mapped[str] = mapped_column(String(10), default="ready")  # pending | ready | failed
+    model: Mapped[str] = mapped_column(String(60))
+    storage_key: Mapped[str | None] = mapped_column(String(300))
+    content_type: Mapped[str] = mapped_column(String(50), default="image/jpeg")
+    before_storage_key: Mapped[str | None] = mapped_column(String(300))  # preview: the same face crop, untreated
+    details: Mapped[dict] = mapped_column(JSONB, default=dict)
+    error: Mapped[str | None] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
 class Prescription(Base):
     __tablename__ = "prescriptions"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)

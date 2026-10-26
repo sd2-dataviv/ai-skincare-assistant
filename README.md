@@ -56,26 +56,67 @@ powershell -ExecutionPolicy Bypass -File .\scripts\windows\dev.ps1 test    # bac
 
 PostgreSQL runs in Docker (container `skincare-db`, 127.0.0.1:5433, data in the `skincare-pgdata` volume), so `backend\.env` works unchanged. A `.venv` or `node_modules` copied from Linux won't run on Windows: the script uses `backend\.venv-win`, and `npm ci` reinstalls `node_modules`.
 
-## Run with Docker, or upload to the Workflow Platform
 
-The folder is ready to zip and upload as an **application** (`docker-compose.yml` + `node.yaml`; the screen people
-open is the `web` part on port 8080). Locally: `docker compose up --build`, then open http://localhost:8080.
+## The clinic's skin models
 
-Every setting has a working default, so it starts with no configuration. Set these as environment values on the
-platform (never put them in the zip):
+Set `ANALYSIS_ENGINE=ws` and the two model addresses in `backend/.env`, then restart the API:
+- The diagnosis model scores acne, pigmentation and dark circles, and marks them on the photos.
+- The post-treatment model makes a preview of the face with those spots painted out.
 
-| Value | What it does | Default |
+The doctor sees the pictures in review. The client sees them only once the plan is approved, and the preview is always labelled as an illustration.
+
+If a model server is down, the consultation carries on with estimates.
+
+[docs/07-skin-models.md](docs/07-skin-models.md) covers the protocol, the changes made to the two service folders, who sees what, and a stand-in server for demos (`make stand-in-models`).
+
+## Signing in from WorkflowHub
+
+Opened from WorkflowHub, the app signs clinic staff in automatically with their platform session (matched by email).
+The login form also takes their WorkflowHub email and password. Platform users with no clinic account become
+operators (they run consultations); doctors and admins sign in with their clinic accounts.
+
+Ten endpoints are shared with other apps and AI agents (`node.yaml` `api:`). WorkflowHub calls them as the person
+asking, and each keeps its usual role check.
+
+The same platform session, renewed by the app, authorises the skin model gateway. A platform service account
+(`SKIN_MODEL_AUTH_EMAIL` / `SKIN_MODEL_AUTH_PASSWORD`) is better for production: it works with nobody signed in.
+
+See [docs/08-platform-sso.md](docs/08-platform-sso.md).
+
+## Run with Docker, or upload to WorkflowHub
+
+The folder is ready to zip and upload as an **application**, following WorkflowHub's "Building an Application" guide:
+- `node.yaml` gives the permanent `key`, a one-line `description`, and the website's container port, 8080.
+- `docker-compose.yml` runs the website (`web`: nginx with the React app, forwarding `/api/...`), the `api` and the
+  `db`. Only the container port is listed, so the platform picks the host port.
+- Data lives in named volumes, and the database has a health check.
+
+Locally:
+
+```
+cp .env.example .env              # then fill in the values
+docker compose up --build
+docker compose port web 8080      # the address to open
+```
+
+Settings and secrets come from `.env`, which the `api` reads through `env_file`. It is never baked into an image, and
+WorkflowHub never includes it when the code is downloaded. Values in `.env.example`:
+
+| Value | What it does | In `.env.example` |
 |---|---|---|
 | `LLM_API_KEY` | Groq key; turns on the AI assistant | empty = scripted assistant |
-| `JWT_SECRET` | signs staff and kiosk logins (32+ characters) | a demo value, change it |
+| `JWT_SECRET` | signs staff and kiosk logins (32+ characters) | a placeholder: change it |
 | `POSTGRES_PASSWORD` | database password (the database is never exposed) | a demo value |
-| `PUBLIC_BASE_URL` | the app's public address, used in texts that link clients to `/my` | empty = texts say to sign in on the clinic's website |
+| `PUBLIC_BASE_URL` | the app's public address, used in texts that link clients to `/my` | empty = relative links |
 | `SEED_DEMO_USERS` | `1` creates doctor@ / admin@ / operator@clinic.local | `1` |
 | `DEMO_PASSWORD` | password for those demo accounts | `Demo@12345` |
 | `PHOTO_FACE_CHECK` | `false` accepts photos without a detectable face | `true` |
 
+WorkflowHub injects its own `WFH_*` values (such as `WFH_AUTH_SERVICE_URL`); the compose file leaves them alone.
+
 The live camera needs HTTPS (browsers block it on plain http other than localhost); photo upload works either way.
-Build the zip without local files: no `backend/.env`, `.venv`, `node_modules`, `dist` or `e2e`.
+Build the zip without local files: no `backend/.env`, `.venv`, `node_modules`, `dist`, `var` or `e2e`. The root
+`.env` is included only when you want the platform to use it.
 
 ## Tests
 

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import AIAction, Analysis, Approval, Assessment, Client, Conversation, Escalation, Note, Photo, Prescription, User, Visit
 from app.schemas import AnalysisOut, ApprovalOut, AssessmentOut, ClientOut, EscalationOut, PhotoOut, PrescriptionOut, VisitOut
+from app.services import model_images
 
 
 async def get_or_404(db: AsyncSession, model, id_):
@@ -68,6 +69,7 @@ async def visit_detail(db: AsyncSession, visit: Visit, include_actions: bool = T
                    "created_at": n.created_at.isoformat()}
                   for n in (await db.execute(select(Note).where(Note.visit_id == vid).order_by(Note.created_at))).scalars()],
         "conversation_mode": conv.mode if conv else None,
+        "model_images": [model_images.staff_view(r) for r in await model_images.for_visit(db, vid)],
     }
     if include_actions:
         conds = [AIAction.visit_id == vid]

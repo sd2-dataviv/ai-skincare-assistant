@@ -44,4 +44,5 @@ On start, the `api` container runs `alembic upgrade head`, then seeds or updates
 - **Health:** `GET /api/health` reports the LLM and analysis adapter in use.
 - **Audit:** the `ai_actions` table is the audit trail. The doctor console shows it per visit.
 - **Switching the LLM:** set `LLM_PROVIDER` to `groq`, `openai` or `ollama` (plus `LLM_API_KEY`, `LLM_MODEL` and `LLM_BASE_URL`). If the provider fails, the scripted agent answers that turn, so the visit never stalls.
-- **Plugging in real services:** set `ANALYSIS_ENGINE=http` and `ANALYSIS_ENGINE_URL`, and `D365_MODE=http` and `D365_BASE_URL`. Expected payloads are in `app/integrations/*.py`.
+- **The clinic's skin models:** set `ANALYSIS_ENGINE=ws`, `SKIN_DIAGNOSIS_WS_URL` and `SKIN_POST_TREATMENT_WS_URL`; see [07-skin-models.md](07-skin-models.md). The model server must be reachable from the API (same network or VPN); the connection is never sent through an HTTP proxy.
+- **Plugging in other services:** set `ANALYSIS_ENGINE=http` and `ANALYSIS_ENGINE_URL`, and `D365_MODE=http` and `D365_BASE_URL`. Expected payloads are in `app/integrations/*.py`.

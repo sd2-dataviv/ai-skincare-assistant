@@ -30,6 +30,7 @@ export default function Login() {
       <form className="panel" onSubmit={submit}>
         <div className="brand"><span className="brand-mark" aria-hidden /> Skin consultation</div>
         <h1>Sign in</h1>
+        <p className="muted">Use your WorkflowHub email and password, or your clinic account.</p>
         <div className="field">
           <label htmlFor="email">Email</label>
           <input id="email" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />

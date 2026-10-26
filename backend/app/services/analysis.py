@@ -59,13 +59,24 @@ async def run_analysis(db: AsyncSession, visit: Visit, client: Client, photos: l
     result = await get_analysis_engine().analyse(images, age_of(client))
 
     front = by_pose["front"]
-    diag = Analysis(visit_id=visit.id, photo_id=front.id, kind="diagnosis", engine=result.engine,
-                    result={"diagnosis": result.diagnosis, "flags": result.flags}, confidence=result.confidence)
-    aa = Analysis(visit_id=visit.id, photo_id=front.id, kind="anti_aging", engine=result.engine,
+    diag_result = {"diagnosis": result.diagnosis, "flags": result.flags}
+    if result.model is not None:
+        diag_result["model"] = result.model
+    diag = Analysis(visit_id=visit.id, photo_id=front.id, kind="diagnosis", engine=result.engine[:40],
+                    result=diag_result, confidence=result.confidence)
+    aa = Analysis(visit_id=visit.id, photo_id=front.id, kind="anti_aging", engine=result.engine[:40],
                   result=result.anti_aging, confidence=result.confidence)
     db.add_all([diag, aa])
     out = {"diagnosis": result.diagnosis, "anti_aging": result.anti_aging, "confidence": result.confidence,
-           "flags": result.flags, "engine": result.engine, "comparison": None}
+           "flags": result.flags, "engine": result.engine, "comparison": None, "model": result.model}
+
+    # Pictures from the skin models: overlays now, the post-treatment preview in the background (doctor sees it in
+    # review; the client only after approval).
+    from app.services import model_images
+
+    await model_images.save_overlays(db, visit, by_pose, result.images)
+    preview = await model_images.start_preview(db, visit, front, images["front"])
+    out["preview"] = {"id": str(preview.id), "status": preview.status} if preview else None
 
     prev = await _previous_diagnosis(db, visit)
     if prev:

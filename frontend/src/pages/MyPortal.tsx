@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import { Link, useParams } from "react-router-dom";
 import HistoryPanel from "../components/HistoryPanel";
 import { api, ApiError } from "../lib/api";
-import { Letter } from "./Summary";
+import { clientImageSrc, Letter } from "./Summary";
 
 // A client on their own phone: sign in with their mobile number and a one-time code, then read their consultations
 // and chat with the clinic. Its token is kept apart from staff sign-ins and only for this browser tab (NFR-06).
@@ -162,7 +162,7 @@ export function MyVisitSummary() {
     <Frame me={me} onSignOut={signOut}>
       <main className="summary-page">
         <div className="no-print summary-back"><Link className="btn quiet small" to="/my">‹ Back to your consultations</Link></div>
-        {s ? <Letter s={s} /> : <p className={error ? "error-text" : "muted"}>{error ?? "Loading…"}</p>}
+        {s ? <Letter s={s} imageSrc={clientImageSrc(token)} /> : <p className={error ? "error-text" : "muted"}>{error ?? "Loading…"}</p>}
       </main>
     </Frame>
   );

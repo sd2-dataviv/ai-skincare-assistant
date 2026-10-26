@@ -9,6 +9,7 @@ from app.config import get_settings
 from app.integrations.messaging import get_messenger
 from app.models import Analysis, Approval, Assessment, CatalogueItem, Client, Note, SummaryShare, User, Visit
 from app.services import DomainError
+from app.services import model_images
 from app.services.analysis import CONCERN_LABELS, latest, top_findings
 from app.services.clients import mask_mobile
 from app.services.prescriptions import get as get_prescription
@@ -92,6 +93,7 @@ async def build_summary(db: AsyncSession, visit: Visit) -> dict:
         "appointments": [{k: a[k] for k in ("procedure", "status", "label", "starts_at", "ends_at", "room_name",
                                              "session_index", "sessions_total")}
                          for a in await _appointments(db, visit)],
+        "images": await model_images.client_list(db, visit.id),
         "disclaimer": DISCLAIMER,
     }
 

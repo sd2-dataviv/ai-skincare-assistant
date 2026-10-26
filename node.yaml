@@ -1,10 +1,73 @@
-# Workflow Platform descriptor. No `path` and no inputs/outputs: this is an APPLICATION (something people open),
-# not a node. The parts and how they start are in docker-compose.yml; `web` on port 8080 is the front door.
+# WorkflowHub descriptor. No `path` and no inputs/outputs: this is an APPLICATION (something people open), not a
+# node. The parts and how they start are in docker-compose.yml; `web` on container port 8080 is the website.
 name: AI Skincare Assistant
-key: ai_skincare_assistant
+key: ai_skincare_assistant        # permanent identity: uploading this key again makes a new version. Never change it.
+description: AI skin consultation with doctor-approved treatment plans, skin analysis and treatment-room booking.
 category: healthcare
 icon: skincare
 
 entrypoint:
   type: http
   port: 8080
+
+# Shared with other apps and AI agents (after upload: Sharing -> Agent access -> Expose to agents). WorkflowHub calls
+# as the person asking, who must have a clinic staff account; each endpoint keeps its usual role check (most are for
+# doctors and admins). Keep in step with backend/app/shared_api.py, which refuses anything not listed here.
+api:
+  base_path: /api
+  endpoints:
+    - key: list_catalogue
+      method: GET
+      path: /catalogue
+      description: The clinic's treatments and home-care products, with prices, sessions and suitable skin concerns.
+    - key: doctor_queue
+      method: GET
+      path: /doctor/queue
+      description: Treatment plans waiting for a doctor's approval and consultations handed to a doctor, oldest first.
+    - key: search_records
+      method: GET
+      path: /doctor/records
+      description: Past consultations, newest first; filter by client name or mobile digits and by outcome.
+      params:
+        - {name: q, type: text, required: false}
+        - {name: outcome, type: text, required: false}
+        - {name: limit, type: number, required: false}
+    - key: visit_summary
+      method: GET
+      path: /visits/{visit_id}/summary
+      description: A visit's doctor-approved summary (findings, plan, appointments); only for approved plans.
+    - key: room_schedule
+      method: GET
+      path: /ot/schedule
+      description: One day's treatment-room schedule, plus bookings waiting to be confirmed or scheduled. day is YYYY-MM-DD.
+      params:
+        - {name: day, type: text, required: false}
+    - key: free_slots
+      method: GET
+      path: /ot/availability
+      description: Free treatment-room slots for a catalogue treatment (item_id from list_catalogue). day is YYYY-MM-DD.
+      params:
+        - {name: item_id, type: text, required: true}
+        - {name: day, type: text, required: false}
+        - {name: count, type: number, required: false}
+    - key: bookings_to_confirm
+      method: GET
+      path: /ot/tentative
+      description: Treatment bookings that clients chose in the chat and staff still have to confirm.
+    - key: get_booking
+      method: GET
+      path: /ot/bookings/{booking_id}
+      description: One treatment booking with its readiness checklist and its current version.
+    - key: confirm_booking
+      method: POST
+      path: /ot/bookings/{booking_id}/confirm
+      description: Confirm a tentative booking and text the client. Needs the booking's current version (get_booking).
+      params:
+        - {name: version, type: number, required: true}
+    - key: room_report
+      method: GET
+      path: /ot/reports
+      description: Treatment-room utilisation and turnover between two dates (from, to as YYYY-MM-DD; default last 30 days).
+      params:
+        - {name: from, type: text, required: false}
+        - {name: to, type: text, required: false}

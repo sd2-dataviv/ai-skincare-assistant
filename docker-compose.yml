@@ -1,30 +1,23 @@
 # AI Skincare Assistant: three parts, every one built or pulled as an image (nothing mounted from this folder).
-# Works as-is on the Workflow Platform (an APPLICATION: the user-facing part is `web`) and locally with
-# `docker compose up --build`. Settings and secrets come from environment values; a `.env` file next to this
-# one (never committed or zipped) is read automatically for local runs.
+# Works as-is on WorkflowHub (an APPLICATION: the website is `web`, see node.yaml) and locally with
+# `docker compose up --build` (then `docker compose port web 8080` shows the address).
+#
+# Settings and secrets come from `.env` next to this file (env_file below; copy .env.example to start). It is never
+# baked into an image (.dockerignore). WorkflowHub also injects WFH_* values (WFH_AUTH_SERVICE_URL, ...) into the
+# app's services; they are deliberately NOT set here, so nothing overrides them.
 services:
-  web:                                   # the screen people open (nginx serving the React app, proxying /api)
+  web:                                   # the website people open (nginx serving the React app, forwarding /api)
     build: ./frontend
-    ports: ["8080:8080"]
+    ports: ["8080"]                      # container port only: the platform (or Docker locally) picks the host port
     depends_on:
       api: { condition: service_healthy }
+    restart: unless-stopped
 
   api:                                   # FastAPI backend: runs migrations and seeding, then serves /api
     build: ./backend
-    environment:
+    env_file: .env                       # LLM key, JWT secret, demo users, skin model settings (see .env.example)
+    environment:                         # fixed by this stack's layout, so not left to .env
       DATABASE_URL: postgresql+asyncpg://skincare:${POSTGRES_PASSWORD:-skincare-demo-db}@db:5432/skincare
-      ENVIRONMENT: ${ENVIRONMENT:-development}
-      JWT_SECRET: ${JWT_SECRET:-change-me-demo-secret-0123456789abcdef}
-      LLM_PROVIDER: ${LLM_PROVIDER:-groq}
-      LLM_MODEL: ${LLM_MODEL:-openai/gpt-oss-120b}
-      LLM_API_KEY: ${LLM_API_KEY:-}            # empty = the scripted assistant answers (no AI key needed)
-      LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT:-low}
-      PHOTO_FACE_CHECK: ${PHOTO_FACE_CHECK:-true}
-      OTP_MODE: ${OTP_MODE:-mock}              # mock = demo code 123456
-      SEED_DEMO_USERS: ${SEED_DEMO_USERS:-1}   # 1 = demo staff accounts (password DEMO_PASSWORD); 0 = none
-      DEMO_PASSWORD: ${DEMO_PASSWORD:-Demo@12345}
-      CLINIC_TIMEZONE: ${CLINIC_TIMEZONE:-Asia/Kolkata}
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}    # empty = summary links are relative to wherever the app is served
       STORAGE_DIR: /data/photos
     volumes: [photos:/data/photos]
     depends_on:
@@ -35,6 +28,7 @@ services:
       timeout: 5s
       retries: 12
       start_period: 30s
+    restart: unless-stopped
 
   db:                                    # PostgreSQL 16; reached only by the api, so no port is published
     image: postgres:16-alpine
@@ -42,12 +36,13 @@ services:
       POSTGRES_USER: skincare
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-skincare-demo-db}
       POSTGRES_DB: skincare
-    volumes: [pgdata:/var/lib/postgresql/data]
+    volumes: [pgdata:/var/lib/postgresql/data]   # named volumes: the data survives restarts and new versions
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U skincare -d skincare"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 12
+    restart: unless-stopped
 
 volumes:
   pgdata:

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Appointments, AuthedImage, Findings, formatDate, PlanList, TopBar } from "../components/Chrome";
+import { StaffModelPictures } from "../components/ModelPictures";
 import { api, ApiError, uid } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import type { Appointment, CatalogueItem, Finding, Message, PlanItem, StaffThread, ThreadMessage, ThreadView } from "../lib/types";
+import type { Appointment, CatalogueItem, Finding, Message, ModelImageStaff, PlanItem, StaffThread, ThreadMessage, ThreadView } from "../lib/types";
 
 interface QueueItem {
   type: "approval" | "escalation" | "with_doctor" | "message";
@@ -366,6 +367,7 @@ interface VisitDetail {
   conversation_mode: string | null;
   ot_bookings: Appointment[];
   actions: { id: string; action: string; actor: string; status: string; stage: string | null; reason: string; created_at: string }[];
+  model_images?: ModelImageStaff[];
 }
 
 function age(dob: string | null) {
@@ -397,8 +399,9 @@ function VisitReview({ visitId, queueItem, onChanged }: { visitId: string; queue
 
   const diag = d?.analyses.filter((a) => a.kind === "diagnosis").at(-1);
   const anti = d?.analyses.filter((a) => a.kind === "anti_aging").at(-1);
-  const findings: Finding[] = useMemo(() => diag ? Object.entries(diag.result.diagnosis as Record<string, { score: number }>)
-    .map(([c, v]) => ({ concern: c, label: CONCERN_LABEL[c] ?? c, score: v.score })).sort((a, b) => b.score - a.score) : [], [diag]);
+  const findings: Finding[] = useMemo(() => diag ? Object.entries(diag.result.diagnosis as Record<string, { score: number; source?: Finding["source"]; count?: number }>)
+    .map(([c, v]) => ({ concern: c, label: CONCERN_LABEL[c] ?? c, score: v.score, source: v.source, count: v.count }))
+    .sort((a, b) => b.score - a.score) : [], [diag]);
 
   if (error) return <p className="error-text">{error}</p>;
   if (!d) return <p className="muted">Loading…</p>;
@@ -497,9 +500,12 @@ function VisitReview({ visitId, queueItem, onChanged }: { visitId: string; queue
               ))}
             </div>
           )}
-          {findings.length > 0 && <Findings findings={findings} raised={d.visit.concerns} />}
+          {findings.length > 0 && <Findings findings={findings} raised={d.visit.concerns} showSource />}
         </div>
       </div>
+
+      <StaffModelPictures visitId={d.visit.id} images={d.model_images ?? []} model={diag?.result?.model ?? null}
+        approved={rx?.status === "approved"} onReload={load} />
 
       <section className="section" aria-labelledby="plan-h">
         <h2 id="plan-h">Plan</h2>

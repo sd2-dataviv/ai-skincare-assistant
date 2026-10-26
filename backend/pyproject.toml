@@ -1,7 +1,7 @@
 [project]
 name = "skincare-assistant-api"
 version = "0.1.0"
-description = "AI Skincare Assistant â€” FastAPI backend"
+description = "AI Skincare Assistant — FastAPI backend"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115,<1",
@@ -15,6 +15,7 @@ dependencies = [
   "pyjwt>=2.8",
   "bcrypt>=4.1",
   "httpx>=0.27",
+  "websockets>=15",  # the clinic's skin model services
   "python-multipart>=0.0.9",
   "opencv-python-headless>=4.10,<5",  # 5.x removed CascadeClassifier (face check)
   "numpy>=1.26",

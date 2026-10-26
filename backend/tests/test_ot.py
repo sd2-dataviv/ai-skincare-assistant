@@ -194,8 +194,10 @@ async def test_two_treatments_are_booked_one_after_the_other(client, operator, d
 async def test_slot_taken_between_offer_and_tap(client, operator, doctor):
     s = await _to_booking(client, operator, doctor, [{"catalogue_id": "svc-qswitch-toning", "sessions": 6}])
     slot = s.ui["booking"]["slots"][0]
-    other = await _visit_quick(["svc-carbon-laser"])
-    r = await client.post("/api/ot/bookings", json={"visit_id": str(other), "item_id": "svc-carbon-laser",
+    # Another client takes that exact slot first. Same treatment, so it fits the slot at any time of day (a longer one
+    # could run past closing when the test runs late in the afternoon, and would then need an override).
+    other = await _visit_quick(["svc-qswitch-toning"])
+    r = await client.post("/api/ot/bookings", json={"visit_id": str(other), "item_id": "svc-qswitch-toning",
                                                      "room_id": slot["room_id"], "starts_at": slot["starts_at"]},
                           headers=doctor)
     assert r.status_code == 201, r.text

@@ -464,3 +464,31 @@ input.num { width: 5rem; flex: none; padding: 0.35rem 0.5rem; }
   .brand { white-space: nowrap; }
   .panel { padding: 1.5rem; }
 }
+
+/* ── Skin model pictures ─────────────────────────────────────────────── */
+.finding .name .src { display: block; width: fit-content; margin-top: 0.1rem; font-size: 0.72rem; line-height: 1.3; padding: 0 0.4rem;
+  border-radius: 999px; letter-spacing: 0.01em; }
+.finding .name .src.model { background: var(--eucalyptus-wash); color: var(--eucalyptus-ink); }
+.finding .name .src.estimate { background: var(--mist-2); color: var(--ink-2); }
+.model-pics { display: grid; gap: 0.9rem; }
+.model-pics h3 { margin: 0; font-size: 1.02rem; }
+.model-note { margin: 0; }
+.model-note.warn { color: #6b4511; background: var(--amber-wash); padding: 0.45rem 0.7rem; border-radius: var(--r-sm); }
+.mp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
+.mp-grid figure, .ba figure { margin: 0; display: grid; gap: 0.3rem; }
+.mp-grid img, .ba img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-md); background: var(--mist-2);
+  border: 1px solid var(--line); }
+.mp-grid figcaption { display: grid; font-size: 0.82rem; color: var(--ink-2); }
+.mp-preview { display: grid; gap: 0.6rem; padding: 0.9rem; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--paper); }
+.mp-preview-head { display: flex; gap: 0.6rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.mp-preview > .linkish { justify-self: start; font-size: 0.9rem; }
+.mp-failed { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+.mp-failed .error-text { margin: 0; }
+.ba { display: grid; grid-template-columns: repeat(2, minmax(0, 260px)); gap: 0.75rem; }
+.ba.single { grid-template-columns: minmax(0, 260px); }
+.ba figcaption { text-align: center; font-size: 0.82rem; color: var(--ink-3); }
+.illustration-tag { font-size: 0.78rem; font-weight: 700; color: #6b4511; background: var(--amber-wash); border: 1px dashed var(--amber);
+  padding: 0.1rem 0.55rem; border-radius: 999px; }
+@media print { .model-pics img { break-inside: avoid; } }
+.model-pics.client .mp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.model-pics.client .mp-grid figcaption { font-size: 0.75rem; text-align: center; }

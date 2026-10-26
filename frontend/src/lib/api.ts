@@ -33,6 +33,13 @@ export class ApiError extends Error {
 // `token` overrides the staff token: the client portal (/my) signs in separately and keeps its own token.
 type Opts = { method?: string; body?: unknown; form?: FormData; idempotencyKey?: string; auth?: boolean; token?: string | null };
 
+// Set by platformSso.ts: signs staff in again with the current WorkflowHub session after a 401 (session expired, or
+// the platform user changed). Resolves true when a new staff token is in place.
+let reauth: (() => Promise<boolean>) | null = null;
+export function setReauth(fn: (() => Promise<boolean>) | null) {
+  reauth = fn;
+}
+
 export async function api<T = any>(path: string, opts: Opts = {}): Promise<T> {
   const headers: Record<string, string> = {};
   const bearer = opts.token !== undefined ? opts.token : token;
@@ -44,7 +51,17 @@ export async function api<T = any>(path: string, opts: Opts = {}): Promise<T> {
     headers["Content-Type"] = "application/json";
     body = JSON.stringify(opts.body);
   }
-  const res = await fetch(`/api${path}`, { method: opts.method ?? (body ? "POST" : "GET"), headers, body, cache: "no-store" });
+  const send = () => fetch(`/api${path}`, { method: opts.method ?? (body ? "POST" : "GET"), headers, body, cache: "no-store" });
+  let res = await send();
+  // Staff session refused: when opened from WorkflowHub, sign in again with the platform session and retry once.
+  // (Not for the sign-in calls themselves; /auth/me is included, so an expired session found at start-up recovers.)
+  if (res.status === 401 && opts.auth !== false && opts.token === undefined && bearer && reauth
+      && !path.startsWith("/auth/login") && !path.startsWith("/auth/platform-session")) {
+    if (await reauth()) {
+      headers.Authorization = `Bearer ${token}`;
+      res = await send();
+    }
+  }
   if (res.status === 401 && opts.auth !== false) {
     if (opts.token !== undefined) {
       window.dispatchEvent(new Event("client:expired"));
@@ -68,8 +85,11 @@ export async function api<T = any>(path: string, opts: Opts = {}): Promise<T> {
   return res.json();
 }
 
-export async function fetchBlobUrl(path: string): Promise<string> {
-  const res = await fetch(`/api${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {}, cache: "no-store" });
+// Images need the sign-in too, so they're fetched and shown from a blob. `token` and `auth` work as in api().
+export async function fetchBlobUrl(path: string, opts: { token?: string | null; auth?: boolean } = {}): Promise<string> {
+  const bearer = opts.token !== undefined ? opts.token : token;
+  const headers: Record<string, string> = opts.auth !== false && bearer ? { Authorization: `Bearer ${bearer}` } : {};
+  const res = await fetch(`/api${path}`, { headers, cache: "no-store" });
   if (!res.ok) throw new ApiError(res.status, "Could not load image");
   return URL.createObjectURL(await res.blob());
 }

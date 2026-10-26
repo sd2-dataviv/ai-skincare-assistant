@@ -2,7 +2,7 @@
 UV ?= $(HOME)/.local/bin/uv
 PY := backend/.venv/bin/python
 
-.PHONY: setup db api api-demo api-nocam sample-photos web test typecheck build seed migrate e2e
+.PHONY: setup db api api-demo api-nocam sample-photos web test typecheck build seed migrate e2e stand-in-models
 
 setup: db
 	cd backend && ( [ -d .venv ] || $(UV) venv .venv --python 3.12 ) && $(UV) pip install --python .venv/bin/python -e ".[dev]"
@@ -29,6 +29,10 @@ api-demo: db
 # Real LLM (Groq), face check off: test with `make sample-photos` uploads when there is no webcam
 api-nocam: db
 	cd backend && PHOTO_FACE_CHECK=false .venv/bin/uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+# STAND-IN for the clinic's skin model servers (not a model; for demos). See docs/07-skin-models.md
+stand-in-models:
+	$(PY) scripts/fake_skin_models.py $(ARGS)
 
 sample-photos:
 	cd backend && .venv/bin/python -m scripts.sample_photos ../samples

@@ -20,6 +20,7 @@ from sqlalchemy import text  # noqa: E402
 from app.db import Base, get_engine, sessionmaker  # noqa: E402
 from app.integrations.analysis_engine import set_analysis_engine  # noqa: E402
 from app.integrations.messaging import OUTBOX  # noqa: E402
+from app.integrations.platform_auth import gateway_tokens  # noqa: E402
 from app.main import app  # noqa: E402
 from app.seed import seed_catalogue, seed_users  # noqa: E402
 from app.services.ot import seed_doctor_hours, seed_equipment, seed_rooms  # noqa: E402
@@ -53,6 +54,7 @@ async def clean_tables():
         await conn.execute(text("TRUNCATE " + ", ".join(tables) + " CASCADE"))
     OUTBOX.sent.clear()
     set_analysis_engine(None)
+    gateway_tokens.reset()  # the model gateway's platform session is process-wide
     yield
 
 

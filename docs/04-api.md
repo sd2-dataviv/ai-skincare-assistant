@@ -100,6 +100,34 @@ Another client's thread, visit or summary answers 404. Chats waiting for staff a
 
 The clinic device (operator account) faces the client, so it can't open the calendar, which shows other clients' names. It books a client's own treatments only through the chat. Times are ISO 8601 with an offset; the calendar and slot labels use `CLINIC_TIMEZONE` (default `Asia/Kolkata`).
 
+## Skin model pictures
+
+See [07-skin-models.md](07-skin-models.md). Pictures not allowed to the caller answer 404.
+
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| GET | `/visits/{id}/model-images` | doctor, admin | Overlays and preview with status, findings, warnings (also in `GET /visits/{id}` as `model_images`) |
+| POST | `/visits/{id}/model-images/preview` | doctor, admin | Make the post-treatment preview again (202, pending) |
+| GET | `/model-images/{id}/file[?variant=before]` | staff | Doctors and admins: any; operators: only what the client may see |
+| GET | `/me/model-images/{id}/file[?variant=before]` | client | Own visit, approved plan only |
+| GET | `/public/summaries/{token}/images/{id}[?variant=before]` | link holder | The shared visit only |
+
+Summaries (`/visits/{id}/summary`, `/me/visits/{id}/summary`, `/public/summaries/{token}`) and the clinic device's
+`/conversations/{id}/results` carry `images` (empty until the plan is approved).
+
+## Platform SSO
+
+See [08-platform-sso.md](08-platform-sso.md).
+
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| POST | `/auth/platform-session` | anyone with a platform token | `{"token"}`, checked with the platform's auth service; answers like `/auth/login`. 401 bad or expired token, 403 no clinic account or disabled, 409 no email, 404 SSO off |
+| GET | `/auth/platform-config` | anyone | `{"sso_enabled", "auth_mode"}` |
+| POST | `/auth/login` | anyone | A clinic account's password, or the person's WorkflowHub email and password (401 wrong, 403 no clinic account, 503 platform unreachable) |
+
+Ten endpoints are shared with other apps and AI agents through WorkflowHub (`node.yaml` `api:`). Those calls carry a
+signed `X-Wfh-User` header instead of a session token; see 08-platform-sso.md.
+
 ## Errors
 
 Domain errors return `{"detail": "<plain sentence>", "code": "<machine_code>"}`. The status codes are:

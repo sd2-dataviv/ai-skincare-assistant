@@ -87,13 +87,21 @@ switch ($cmd) {
         Write-Host "Open http://localhost:5173  (demo password Demo@12345: operator@ / doctor@ / admin@clinic.local; OTP 123456)" -ForegroundColor Green
     }
     "stop" {
+        # uvicorn --reload serves from a child process that keeps the port open if only the parent is stopped, so stop
+        # whole process trees: the reloader, its workers, and whatever still listens on the ports.
+        $uv = @(Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object { $_.CommandLine -like "*uvicorn*app.main:app*" })
+        foreach ($u in $uv) { taskkill /PID $u.ProcessId /T /F *> $null }
         foreach ($p in 8000, 5173) {
             $id = PortPid $p
-            if ($id) { Stop-Process -Id $id -Force; Write-Host "stopped :$p (pid $id)" } else { Write-Host ":$p not running" }
+            if ($id -and (Get-Process -Id $id -ErrorAction SilentlyContinue)) { taskkill /PID $id /T /F *> $null }
+            elseif ($id) {
+                # The listed owner is gone: the socket is held by a worker it spawned (spawn_main(parent_pid=<owner>)).
+                Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object { $_.CommandLine -like "*spawn_main(parent_pid=$id,*" } |
+                    ForEach-Object { taskkill /PID $_.ProcessId /T /F *> $null }
+            }
+            Start-Sleep -Milliseconds 300
+            if (PortPid $p) { Write-Host ":$p still in use" -ForegroundColor Yellow } else { Write-Host "stopped :$p" }
         }
-        # uvicorn --reload runs the server in a child process; stop the reloader too
-        Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object { $_.CommandLine -like "*uvicorn*app.main:app*" } |
-            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
         Write-Host "The database container keeps running (docker stop skincare-db to stop it)."
     }
     "status" {

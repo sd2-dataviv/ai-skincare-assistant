@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
-import type { Finding, PlanItem } from "../lib/types";
+import type { Finding, ImageSource, ModelImageClient, PlanItem } from "../lib/types";
 import { AuthedImage, Findings, formatDate, PlanList } from "./Chrome";
+import { ClientModelPictures } from "./ModelPictures";
 
 interface Results {
   visit_id: string;
@@ -16,7 +17,10 @@ interface Results {
   sensitive: boolean;
   concerns: string[];
   plan: { status: string; items?: PlanItem[]; warnings?: string[]; excluded?: { name: string; reason: string }[]; hidden?: boolean } | null;
+  images?: ModelImageClient[];  // only once the plan is approved
 }
+
+const deviceSrc: ImageSource = (id, variant = "image") => ({ path: `/model-images/${id}/file${variant === "before" ? "?variant=before" : ""}` });
 
 export default function ResultsPanel({ conversationId, version }: { conversationId: string; version: number }) {
   const [r, setR] = useState<Results | null>(null);
@@ -45,6 +49,13 @@ export default function ResultsPanel({ conversationId, version }: { conversation
         <p className="tiny">Scores are out of 100; lower is better. These are AI observations for the doctor to confirm.
           {r.engine?.startsWith("mock") ? " (Demo analysis engine.)" : ""}</p>
       </section>
+
+      {!!r.images?.length && (
+        <section className="section" aria-labelledby="mp-c-h">
+          <h2 id="mp-c-h">Your photos</h2>
+          <ClientModelPictures images={r.images} src={deviceSrc} />
+        </section>
+      )}
 
       {r.comparison && (
         <section className="section" aria-labelledby="c-h">

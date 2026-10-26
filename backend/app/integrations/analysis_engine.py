@@ -3,6 +3,10 @@
 `MockAnalysisEngine` derives plausible, deterministic scores from simple image statistics so the full flow
 can be exercised end-to-end. It is NOT a medical model; results are labelled engine="mock".
 `HttpAnalysisEngine` posts the photos to the clinic's existing analysis service.
+`SkinModelEngine` (ANALYSIS_ENGINE=ws) sends each photo to the clinic's skin diagnosis model over WebSocket. Acne,
+pigmentation and dark circles are scored from what the model finds; the other concerns stay estimates (mock) until a
+model covers them, and every score says which it is. If the model can't be reached, the whole result falls back to the
+estimates and says so.
 """
 import hashlib
 from dataclasses import dataclass, field
@@ -29,12 +33,25 @@ def severity_label(score: float) -> str:
 
 
 @dataclass
+class EngineImage:
+    """A picture a model made from one of the photos (e.g. the photo with what it found marked on it)."""
+    kind: str  # diagnosis_overlay
+    pose: str
+    data: bytes
+    content_type: str
+    model: str
+    details: dict
+
+
+@dataclass
 class EngineResult:
     engine: str
-    diagnosis: dict[str, dict]  # concern -> {score, label}
+    diagnosis: dict[str, dict]  # concern -> {score, label, source?}
     anti_aging: dict
     confidence: float
     flags: list[dict] = field(default_factory=list)  # [{type: "non_skincare", note: "..."}]
+    images: list[EngineImage] = field(default_factory=list)
+    model: dict | None = None  # what the skin model did: status, message, per-photo findings, extra findings
 
 
 class AnalysisEngine(Protocol):
@@ -114,6 +131,80 @@ class HttpAnalysisEngine:
         return await with_retries(call, "analysis_engine.analyse")
 
 
+class SkinModelEngine:
+    """The clinic's skin diagnosis model for what it covers, the estimate for the rest."""
+
+    name = "skin-model-v1"
+
+    def __init__(self, fallback: AnalysisEngine | None = None):
+        self.fallback = fallback or MockAnalysisEngine()
+
+    async def analyse(self, images: dict[str, bytes], age: int | None) -> EngineResult:
+        from app.integrations import skin_models as sm
+
+        base = await self.fallback.analyse(images, age)
+        for v in base.diagnosis.values():
+            v["source"] = "estimate"
+        svc = sm.diagnosis_service()
+        if svc is None:
+            base.model = {"status": "off", "message": "No skin diagnosis model is configured; all scores are estimates."}
+            return base
+
+        per_pose: dict[str, dict | None] = {}
+        out_images: list[EngineImage] = []
+        problem = None
+        for pose in ("front", "left", "right"):
+            if pose not in images:
+                continue
+            try:
+                reply = await sm.call_service(svc, images[pose])
+            except sm.ModelUnavailable as e:
+                problem = str(e)
+                break  # the service is down: don't wait on it for the other photos
+            per_pose[pose] = reply.details
+            out_images.append(EngineImage("diagnosis_overlay", pose, reply.image, reply.content_type, svc.name,
+                                          {**(reply.details or {}), "seconds": reply.seconds}))
+
+        if not out_images:
+            base.model = {"status": "unavailable", "message": f"{problem} All scores are estimates."}
+            return base
+        base.images = out_images
+        poses = {p: ({"face_detected": d.get("face_detected"), "found": _counts(d)} if d else None)
+                 for p, d in per_pose.items()}
+        if all(d is None for d in per_pose.values()):
+            base.engine = "skin-model-images+mock"
+            base.model = {"status": "no_findings", "poses": poses,
+                          "message": "The model sent marked-up photos but not its findings (it needs the update that "
+                                     "adds return_predictions), so the scores are still estimates."}
+            return base
+
+        summary = sm.summarise({p: d for p, d in per_pose.items() if d}, svc.classes())
+        if not summary["poses_used"]:
+            base.engine = "skin-model-images+mock"
+            base.confidence = round(max(0.0, base.confidence - 0.25), 2)
+            base.model = {"status": "no_face", "poses": poses,
+                          "message": "The model did not find a face in the photos, so the scores are estimates. "
+                                     "Retake the photos facing the camera in even light."}
+            return base
+        for concern, v in summary["scores"].items():
+            base.diagnosis[concern] = {"score": v["score"], "label": severity_label(v["score"]), "source": "model",
+                                       "count": v["count"], "area_pct": v["area_pct"], "pose": v["pose"]}
+        base.engine = self.name
+        base.model = {"status": "ok" if problem is None else "partial", "poses": poses, "extras": summary["extras"],
+                      "classes": svc.classes(),
+                      "message": problem and f"Only some photos were analysed: {problem}"}
+        if "front" not in summary["poses_used"]:
+            base.confidence = round(max(0.0, base.confidence - 0.15), 2)
+        return base
+
+
+def _counts(d: dict) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for x in d.get("detections") or []:
+        out[x.get("class", "?")] = out.get(x.get("class", "?"), 0) + 1
+    return out
+
+
 _engine: AnalysisEngine | None = None
 
 
@@ -121,7 +212,12 @@ def get_analysis_engine() -> AnalysisEngine:
     global _engine
     if _engine is None:
         s = get_settings()
-        _engine = HttpAnalysisEngine(s.analysis_engine_url) if s.analysis_engine == "http" and s.analysis_engine_url else MockAnalysisEngine()
+        if s.analysis_engine == "http" and s.analysis_engine_url:
+            _engine = HttpAnalysisEngine(s.analysis_engine_url)
+        elif s.analysis_engine == "ws":
+            _engine = SkinModelEngine()
+        else:
+            _engine = MockAnalysisEngine()
     return _engine
 
 

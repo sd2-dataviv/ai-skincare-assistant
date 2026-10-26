@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.db import get_db
+from app.integrations import platform_auth
+from app.services.platform_users import staff_for
 from app.models import User
 from app.schemas import LoginIn, TokenOut, UserCreate, UserOut
 from app.security import admin_only, create_token, current_user, hash_password, verify_password
@@ -12,10 +15,27 @@ router = APIRouter(tags=["auth"])
 
 @router.post("/auth/login", response_model=TokenOut)
 async def login(body: LoginIn, db: AsyncSession = Depends(get_db)):
-    user = (await db.execute(select(User).where(User.email == body.email.lower().strip()))).scalar_one_or_none()
-    if user is None or not user.is_active or not verify_password(body.password, user.password_hash):
+    """The sign-in form. A clinic account's own password first; otherwise the person's WorkflowHub (platform) email and
+    password, checked by the platform's auth service and matched to their clinic staff account by email (the same
+    rules as automatic sign-in). The platform session then also serves the skin model gateway."""
+    email = body.email.lower().strip()
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    if user is not None and user.is_active and verify_password(body.password, user.password_hash):
+        return TokenOut(access_token=create_token(user), user=UserOut.model_validate(user))
+
+    if get_settings().wfh_auth_mode == "none":
         raise HTTPException(401, "Incorrect email or password")
-    return TokenOut(access_token=create_token(user), user=UserOut.model_validate(user))
+    try:
+        pair = await platform_auth.password_login(email, body.password)
+    except platform_auth.PlatformUnreachable:
+        raise HTTPException(503, "Can't reach the WorkflowHub sign-in service just now. Clinic accounts still work.")
+    info = await platform_auth.verify_platform_token(pair.access) if pair else None
+    if not info:
+        raise HTTPException(401, "Incorrect email or password")
+    staff = await staff_for(db, info.get("email") or email, info.get("full_name") or info.get("name"), "login")
+    platform_auth.log.info("[login] platform sign-in for user id=%s role=%s", staff.id, staff.role)
+    await platform_auth.gateway_tokens.adopt_pair(pair, staff.full_name)
+    return TokenOut(access_token=create_token(staff), user=UserOut.model_validate(staff))
 
 
 @router.get("/auth/me", response_model=UserOut)

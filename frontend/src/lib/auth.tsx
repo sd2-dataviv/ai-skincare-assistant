@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { api, getToken, setToken } from "./api";
+import { markSignedOut } from "./platformSso";
 import type { User } from "./types";
 
 interface AuthState {
@@ -25,8 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onExpired = () => setUser(null);
+    // Signed in again with the platform session (it may be another platform user now): reload who we are.
+    const onRenewed = () => { api<User>("/auth/me").then(setUser).catch(() => undefined); };
     window.addEventListener("auth:expired", onExpired);
-    return () => window.removeEventListener("auth:expired", onExpired);
+    window.addEventListener("auth:renewed", onRenewed);
+    return () => {
+      window.removeEventListener("auth:expired", onExpired);
+      window.removeEventListener("auth:renewed", onRenewed);
+    };
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -40,6 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    // Opened from WorkflowHub: don't sign straight back in with the same platform login.
+    markSignedOut().catch(() => undefined);
     setToken(null);
     setUser(null);
   }, []);

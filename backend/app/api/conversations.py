@@ -12,6 +12,7 @@ from app.db import get_db
 from app.models import Conversation, Message, User
 from app.schemas import ConversationCreateIn, MessageIn, ThreadMessageIn, ThreadOpenIn
 from app.security import staff
+from app.services import model_images
 from app.services.analysis import CONCERN_LABELS, latest
 from app.services.state import load_state
 
@@ -99,6 +100,7 @@ async def get_results(conversation_id: uuid.UUID, _: User = Depends(staff), db: 
         "skin_type": s.assessment.skin_type if s.assessment else None,
         "sensitive": bool(s.assessment and s.assessment.sensitive),
         "concerns": list(s.visit.concerns or []),
+        "images": await model_images.client_list(db, s.visit.id),  # empty until the plan is approved
         "plan": ({"status": rx.status, "version": rx.version, "items": rx.items,
                   "warnings": (rx.safety or {}).get("warnings", []), "excluded": (rx.safety or {}).get("excluded", [])}
                  if show_plan else ({"status": rx.status, "hidden": True} if rx else None)),

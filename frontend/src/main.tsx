@@ -2,6 +2,7 @@ import { StrictMode, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./lib/auth";
+import { ssoReady } from "./lib/platformSso";
 import type { Role } from "./lib/types";
 import DoctorConsole from "./pages/DoctorConsole";
 import Home from "./pages/Home";
@@ -26,7 +27,9 @@ function Landing() {
   return <Home />;
 }
 
-createRoot(document.getElementById("root")!).render(
+// Awaited, not fire-and-forget: AuthProvider reads the session token once, at mount, so a token set after the first
+// render would leave the app looking signed out. Resolves either way; without a platform token nothing changes.
+ssoReady.then(() => createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
       <BrowserRouter>
@@ -47,4 +50,4 @@ createRoot(document.getElementById("root")!).render(
       </BrowserRouter>
     </AuthProvider>
   </StrictMode>,
-);
+));

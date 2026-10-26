@@ -7,6 +7,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_SECRET = "change-me-in-env-not-for-production-use"
 
+# The parameters the clinic's model services were given with (project ids 187 and 167).
+DIAGNOSIS_PARAMS = ('{"parameters":{"classes":["acne","scars","pigmentation","dark circles"],"draw_bbox":true,"threshold":0.4,'
+                    '"bbox_colors":{"acne":[255,0,0],"scars":[0,255,0],"dark circles":[255,255,0],"pigmentation":[0,0,255]},'
+                    '"bbox_thickness":2,"output_image_size":[1024,1024],"model_path":"","project_id":187}}')
+POST_TREATMENT_PARAMS = ('{"parameters":{"classes":["acne","scars","pigmentation","dark circles"],"threshold":0.1,"mask_dilate":0,'
+                         '"output_image_size":[512,512],"model_path":"","project_id":167}}')
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
@@ -33,8 +40,29 @@ class Settings(BaseSettings):
     llm_reasoning_effort: str | None = "low"  # sent to reasoning models (gpt-oss); low keeps turns fast
 
     # Adapters
-    analysis_engine: str = "mock"  # mock | http
+    analysis_engine: str = "mock"  # mock | http | ws (the clinic's skin models over WebSocket, mock for the rest)
     analysis_engine_url: str | None = None
+
+    # Skin model services (WebSocket: send the parameters as JSON text, then the image bytes; get an image back, then
+    # - when asked with "return_predictions" - a JSON message with what was found). Parameters are sent as written here.
+    skin_diagnosis_ws_url: str | None = None  # e.g. ws://192.168.0.84:9601/ws/cv/9819628774/image/image
+    skin_diagnosis_params: str = DIAGNOSIS_PARAMS
+    skin_post_treatment_ws_url: str | None = None  # e.g. ws://192.168.0.84:9600/ws/cv/3271585349/image/image
+    skin_post_treatment_params: str = POST_TREATMENT_PARAMS
+    # Model gateway token (ws://<gateway>/ws/models/<project>/...?token=...). Gateway tokens last 15 minutes, so the app
+    # keeps one renewed (app/integrations/platform_auth.py), from the first of: a service account on the platform, the
+    # platform session of the last staff member who signed in through WorkflowHub, or a fixed token. Tokens are never
+    # written to logs, error messages or API responses.
+    skin_model_auth_email: str | None = None  # service account: preferred, works without anyone signed in
+    skin_model_auth_password: str | None = None
+    skin_model_token_from_sso: bool = True  # use the platform session handed over at a staff SSO sign-in
+    skin_model_token: str | None = None  # a fixed token: quick checks and tests only (it expires)
+    skin_model_unwrap_params: bool = True  # send {"parameters": {...}} as its inner object (see skin_models.call_service)
+    skin_model_connect_timeout_s: float = 5.0
+    skin_diagnosis_timeout_s: float = 60.0  # per photo
+    skin_post_treatment_timeout_s: float = 300.0  # inpainting is slow on a CPU
+    skin_model_details_wait_s: float = 1.0  # wait for the findings after the image (updated services send them at once; older ones never)
+    skin_model_retry_after_s: float = 60.0  # after a service fails, skip it for this long instead of waiting on it again
     d365_mode: str = "mock"  # mock | http
     d365_base_url: str | None = None
     otp_mode: str = "mock"  # mock | sms
@@ -57,6 +85,18 @@ class Settings(BaseSettings):
     otp_max_attempts: int = 5
     otp_max_sends_per_10min: int = 3
     integration_max_retries: int = 3
+
+    # WorkflowHub platform SSO (docs/08-platform-sso.md). WorkflowHub injects WFH_AUTH_SERVICE_URL into the container.
+    wfh_auth_service_url: str = "http://192.168.0.84:5001/api"
+    wfh_auth_mode: str = "platform"  # platform | none (SSO off)
+    # Role for a platform user with no clinic staff account: "operator" (default) creates a clinic-device account on
+    # first sign-in, so any WorkflowHub user can run consultations. Empty = refuse them. Doctors and admins are never
+    # created this way: they sign in with their clinic accounts.
+    wfh_default_role: str | None = "operator"
+    # Sharing the API with other apps and AI agents (node.yaml `api:`; docs/08-platform-sso.md). WorkflowHub calls as
+    # the person asking, with a signed X-Wfh-User header; it injects the secret and audience. Unset = refused.
+    wfh_app_api_secret: str | None = None
+    wfh_app_api_audience: str | None = None
 
     # OT / procedure room booking
     clinic_timezone: str = "Asia/Kolkata"
