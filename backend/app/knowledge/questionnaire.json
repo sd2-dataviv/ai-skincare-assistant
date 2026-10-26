@@ -1,0 +1,110 @@
+{
+  "version": "kys-placeholder-2026.10",
+  "note": "Placeholder content for the 18-question Know your Skin form. Replace with the clinic's approved questions; keep the ids, scoring keys and flags.",
+  "questions": [
+    {"id": "q01", "text": "A few hours after washing your face, how does your skin feel?", "type": "choice", "stable": true,
+     "options": [
+       {"value": "tight", "label": "Tight or dry", "oil": -2},
+       {"value": "comfortable", "label": "Comfortable", "oil": 0},
+       {"value": "tzone_shiny", "label": "Shiny on forehead and nose only", "oil": 1, "combo": 2},
+       {"value": "shiny_all", "label": "Shiny all over", "oil": 2}
+     ]},
+    {"id": "q02", "text": "By midday, how shiny does your face look?", "type": "choice", "stable": true,
+     "options": [
+       {"value": "never", "label": "Not shiny", "oil": -1},
+       {"value": "tzone", "label": "A little, on the T-zone", "oil": 1, "combo": 1},
+       {"value": "very", "label": "Very shiny all over", "oil": 2}
+     ]},
+    {"id": "q03", "text": "How visible are your pores?", "type": "choice", "stable": true,
+     "options": [
+       {"value": "barely", "label": "Barely visible", "oil": -1},
+       {"value": "nose", "label": "Visible on the nose", "oil": 0, "combo": 1},
+       {"value": "all", "label": "Visible across the face", "oil": 2}
+     ]},
+    {"id": "q04", "text": "Do you get flaky or rough patches?", "type": "choice", "stable": true,
+     "options": [
+       {"value": "often", "label": "Often", "oil": -2},
+       {"value": "sometimes", "label": "Sometimes, in winter", "oil": -1},
+       {"value": "never", "label": "Rarely or never", "oil": 0}
+     ]},
+    {"id": "q05", "text": "How does your skin react to new products?", "type": "choice", "stable": true,
+     "options": [
+       {"value": "fine", "label": "Rarely reacts", "sens": 0},
+       {"value": "sometimes", "label": "Sometimes stings or goes red", "sens": 1},
+       {"value": "often", "label": "Often reacts", "sens": 2}
+     ]},
+    {"id": "q06", "text": "How often do you get breakouts?", "type": "choice", "stable": false,
+     "options": [
+       {"value": "rarely", "label": "Rarely"},
+       {"value": "monthly", "label": "Around my cycle or monthly", "concern": "acne"},
+       {"value": "weekly", "label": "Most weeks", "concern": "acne"},
+       {"value": "constant", "label": "Almost all the time", "concern": "acne"}
+     ]},
+    {"id": "q07", "text": "How does your skin respond to the sun?", "type": "choice", "stable": true,
+     "options": [
+       {"value": "burns", "label": "Burns easily, rarely tans", "sens": 1},
+       {"value": "burns_tans", "label": "Burns first, then tans"},
+       {"value": "tans", "label": "Tans easily"},
+       {"value": "rarely_burns", "label": "Rarely burns or tans visibly"}
+     ]},
+    {"id": "q08", "text": "Do you notice dark spots, patches or uneven tone?", "type": "choice", "stable": false,
+     "options": [
+       {"value": "no", "label": "No"},
+       {"value": "some", "label": "A few", "concern": "pigmentation"},
+       {"value": "many", "label": "Yes, quite noticeable", "concern": "pigmentation"}
+     ]},
+    {"id": "q09", "text": "Do you notice fine lines or wrinkles?", "type": "choice", "stable": false,
+     "options": [
+       {"value": "no", "label": "No"},
+       {"value": "fine", "label": "Fine lines when I smile or frown", "concern": "wrinkles"},
+       {"value": "visible", "label": "Visible even at rest", "concern": "wrinkles"}
+     ]},
+    {"id": "q10", "text": "How much time do you spend in the sun on a typical day?", "type": "choice", "stable": false,
+     "options": [
+       {"value": "lt1", "label": "Under an hour"},
+       {"value": "1to3", "label": "1 to 3 hours"},
+       {"value": "gt3", "label": "More than 3 hours"}
+     ]},
+    {"id": "q11", "text": "Do you use sunscreen every day?", "type": "choice", "stable": false,
+     "options": [
+       {"value": "daily", "label": "Every day"},
+       {"value": "sometimes", "label": "Sometimes"},
+       {"value": "never", "label": "Never"}
+     ]},
+    {"id": "q12", "text": "What does your current skincare routine look like?", "type": "choice", "stable": false,
+     "options": [
+       {"value": "none", "label": "Nothing in particular"},
+       {"value": "basic", "label": "Cleanser and moisturiser"},
+       {"value": "actives", "label": "Several steps, including serums or acids"}
+     ]},
+    {"id": "q13", "text": "Are you taking any medicines or supplements right now? If yes, please name them.", "type": "text", "stable": false,
+     "hint": "For example: none, isotretinoin, doxycycline, blood thinners"},
+    {"id": "q14", "text": "Are you allergic to any skincare ingredients? If yes, which ones?", "type": "text", "stable": true,
+     "hint": "For example: none, fragrance, salicylic acid"},
+    {"id": "q15", "text": "Are you pregnant, trying to conceive, or breast-feeding?", "type": "choice", "stable": false,
+     "applies_if": {"gender_in": ["female", "other", null]},
+     "options": [
+       {"value": "no", "label": "No"},
+       {"value": "pregnant", "label": "Pregnant or trying", "flag": "pregnancy"},
+       {"value": "breastfeeding", "label": "Breast-feeding", "flag": "breastfeeding"}
+     ]},
+    {"id": "q16", "text": "How many hours do you usually sleep?", "type": "choice", "stable": false,
+     "options": [
+       {"value": "lt6", "label": "Less than 6", "concern": "dark_circles"},
+       {"value": "6to8", "label": "6 to 8"},
+       {"value": "gt8", "label": "More than 8"}
+     ]},
+    {"id": "q17", "text": "How would you describe your diet?", "type": "choice", "stable": false,
+     "options": [
+       {"value": "balanced", "label": "Mostly balanced"},
+       {"value": "sugar_dairy", "label": "A lot of sugar or dairy"},
+       {"value": "processed", "label": "A lot of fried or processed food"}
+     ]},
+    {"id": "q18", "text": "How much water do you drink in a day?", "type": "choice", "stable": false,
+     "options": [
+       {"value": "lt1", "label": "Less than 1 litre", "concern": "dullness"},
+       {"value": "1to2", "label": "1 to 2 litres"},
+       {"value": "gt2", "label": "More than 2 litres"}
+     ]}
+  ]
+}

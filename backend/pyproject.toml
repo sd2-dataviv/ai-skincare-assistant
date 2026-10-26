@@ -1,0 +1,38 @@
+[project]
+name = "skincare-assistant-api"
+version = "0.1.0"
+description = "AI Skincare Assistant â€” FastAPI backend"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "tzdata>=2024.1",  # IANA time zones (Windows has none built in)
+  "uvicorn[standard]>=0.30",
+  "sqlalchemy[asyncio]>=2.0.30",
+  "asyncpg>=0.29",
+  "alembic>=1.13",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  "pyjwt>=2.8",
+  "bcrypt>=4.1",
+  "httpx>=0.27",
+  "python-multipart>=0.0.9",
+  "opencv-python-headless>=4.10,<5",  # 5.x removed CascadeClassifier (face check)
+  "numpy>=1.26",
+  "pillow>=10.3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]

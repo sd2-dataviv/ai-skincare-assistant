@@ -1,0 +1,14 @@
+.venv/
+node_modules/
+node_modules.*/
+dist/
+*.egg-info/
+.mypy_cache/
+__pycache__/
+.pytest_cache/
+.pgdata/
+var/
+backend/.env
+*.log
+e2e/screenshots/
+e2e/fake-cam.y4m

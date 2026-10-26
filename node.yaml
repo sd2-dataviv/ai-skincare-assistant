@@ -1,0 +1,10 @@
+# Workflow Platform descriptor. No `path` and no inputs/outputs: this is an APPLICATION (something people open),
+# not a node. The parts and how they start are in docker-compose.yml; `web` on port 8080 is the front door.
+name: AI Skincare Assistant
+key: ai_skincare_assistant
+category: healthcare
+icon: skincare
+
+entrypoint:
+  type: http
+  port: 8080

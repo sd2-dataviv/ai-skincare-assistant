@@ -1,0 +1,40 @@
+{
+  "version": "catalogue-sample-2026.10b",
+  "note": "Sample clinic catalogue. Replace with the clinic's real services and products; the AI can only recommend items listed here. room_type says which OT/procedure room a clinic treatment needs; duration_min is the chair time; equipment_type names the machine it needs (one free machine of that type is reserved); needs_doctor means a doctor must perform it (their working hours and other bookings are checked).",
+  "items": [
+    {"id": "svc-hydrafacial", "kind": "service", "equipment_type": "hydrafacial_machine", "needs_doctor": false, "room_type": "facial", "duration_min": 60, "name": "HydraFacial", "concerns": ["dullness", "dryness", "pores"], "skin_types": [], "contraindications": ["active_infection"], "default_sessions": 4, "interval_days": 21, "price_inr": 6500,
+     "description": "Cleanses, exfoliates and hydrates in one session."},
+    {"id": "svc-salicylic-peel", "kind": "service", "needs_doctor": true, "room_type": "peel", "duration_min": 45, "name": "Salicylic Acid Peel", "concerns": ["acne", "pores"], "skin_types": ["oily", "combination", "normal"], "contraindications": ["pregnancy", "breastfeeding", "isotretinoin", "sensitive_skin", "salicylate_allergy"], "default_sessions": 6, "interval_days": 14, "price_inr": 3500,
+     "description": "Oil-soluble peel that clears pores and calms active acne."},
+    {"id": "svc-glycolic-peel", "kind": "service", "needs_doctor": true, "room_type": "peel", "duration_min": 45, "name": "Glycolic Peel", "concerns": ["pigmentation", "dullness", "wrinkles"], "skin_types": ["normal", "combination", "oily", "dry"], "contraindications": ["pregnancy", "isotretinoin", "photosensitising", "sensitive_skin"], "default_sessions": 6, "interval_days": 14, "price_inr": 3500,
+     "description": "Brightening peel that evens tone and smooths texture."},
+    {"id": "svc-carbon-laser", "kind": "service", "equipment_type": "qswitch_laser", "needs_doctor": true, "room_type": "laser", "duration_min": 45, "name": "Carbon Laser Peel", "concerns": ["acne", "pores", "dullness"], "skin_types": ["oily", "combination"], "contraindications": ["pregnancy", "isotretinoin", "photosensitising"], "default_sessions": 4, "interval_days": 21, "price_inr": 5000,
+     "description": "Laser treatment that controls oil and refines pores."},
+    {"id": "svc-qswitch-toning", "kind": "service", "equipment_type": "qswitch_laser", "needs_doctor": true, "room_type": "laser", "duration_min": 30, "name": "Q-Switched Laser Toning", "concerns": ["pigmentation"], "skin_types": [], "contraindications": ["pregnancy", "isotretinoin", "photosensitising"], "default_sessions": 6, "interval_days": 21, "price_inr": 6000,
+     "description": "Targets pigment to lighten spots and melasma."},
+    {"id": "svc-microneedling", "kind": "service", "equipment_type": "microneedling_pen", "needs_doctor": true, "room_type": "minor_procedure", "duration_min": 60, "name": "Microneedling with Serum", "concerns": ["wrinkles", "pores", "acne_scars"], "skin_types": [], "contraindications": ["pregnancy", "isotretinoin", "anticoagulant", "active_infection"], "default_sessions": 4, "interval_days": 28, "price_inr": 7000,
+     "description": "Stimulates collagen to soften fine lines and scars."},
+    {"id": "svc-led-therapy", "kind": "service", "equipment_type": "led_panel", "needs_doctor": false, "room_type": "led", "duration_min": 30, "name": "LED Light Therapy", "concerns": ["acne", "redness", "dullness"], "skin_types": [], "contraindications": ["photosensitising"], "default_sessions": 6, "interval_days": 7, "price_inr": 2000,
+     "description": "Gentle light therapy for calming and clearing skin."},
+    {"id": "svc-undereye", "kind": "service", "needs_doctor": false, "room_type": "facial", "duration_min": 45, "name": "Under-eye Revitalising Treatment", "concerns": ["dark_circles"], "skin_types": [], "contraindications": ["pregnancy"], "default_sessions": 4, "interval_days": 14, "price_inr": 4000,
+     "description": "Brightens and hydrates the under-eye area."},
+    {"id": "svc-barrier-facial", "kind": "service", "needs_doctor": false, "room_type": "facial", "duration_min": 60, "name": "Calming Barrier Repair Facial", "concerns": ["redness", "dryness"], "skin_types": [], "contraindications": [], "default_sessions": 3, "interval_days": 14, "price_inr": 3000,
+     "description": "Soothing facial for sensitive or irritated skin."},
+
+    {"id": "doc-antiageing-consult", "kind": "doctor_service", "name": "Anti-ageing Injectables Consultation (Doctor)", "concerns": ["wrinkles"], "skin_types": [], "contraindications": ["pregnancy", "breastfeeding", "anticoagulant"], "default_sessions": 1, "interval_days": 0, "price_inr": 1500,
+     "description": "Doctor-led assessment for injectable options."},
+    {"id": "doc-acne-consult", "kind": "doctor_service", "name": "Dermatologist Acne Review (Doctor)", "concerns": ["acne"], "skin_types": [], "contraindications": [], "default_sessions": 1, "interval_days": 0, "price_inr": 1200,
+     "description": "Doctor review for moderate to severe acne, including oral options."},
+
+    {"id": "prd-gentle-cleanser", "kind": "product", "name": "Gentle Hydrating Cleanser", "concerns": ["dryness", "redness"], "skin_types": ["dry", "normal"], "contraindications": [], "ingredients": ["glycerin", "ceramides"], "usage": "Morning and night", "price_inr": 750},
+    {"id": "prd-salicylic-cleanser", "kind": "product", "name": "2% Salicylic Acid Cleanser", "concerns": ["acne", "pores"], "skin_types": ["oily", "combination"], "contraindications": ["salicylate_allergy", "pregnancy"], "ingredients": ["salicylic acid"], "usage": "Night, massage for 30 seconds", "price_inr": 850},
+    {"id": "prd-niacinamide", "kind": "product", "name": "10% Niacinamide Serum", "concerns": ["acne", "pores", "pigmentation", "redness"], "skin_types": [], "contraindications": [], "ingredients": ["niacinamide", "zinc"], "usage": "Morning, 2–3 drops before moisturiser", "price_inr": 900},
+    {"id": "prd-vitc", "kind": "product", "name": "Vitamin C Serum", "concerns": ["pigmentation", "dullness"], "skin_types": [], "contraindications": ["sensitive_skin"], "ingredients": ["ascorbic acid", "fragrance"], "usage": "Morning, before sunscreen", "price_inr": 1200},
+    {"id": "prd-retinol", "kind": "product", "name": "0.3% Retinol Night Serum", "concerns": ["wrinkles", "acne", "pigmentation"], "skin_types": [], "contraindications": ["pregnancy", "breastfeeding", "isotretinoin", "sensitive_skin"], "ingredients": ["retinol"], "usage": "Night, 3 times a week to start", "price_inr": 1400},
+    {"id": "prd-azelaic", "kind": "product", "name": "Azelaic Acid 10% Cream", "concerns": ["acne", "pigmentation", "redness"], "skin_types": [], "contraindications": [], "ingredients": ["azelaic acid"], "usage": "Night, thin layer", "price_inr": 950},
+    {"id": "prd-gel-moisturiser", "kind": "product", "name": "Oil-free Gel Moisturiser", "concerns": ["acne", "pores"], "skin_types": ["oily", "combination"], "contraindications": [], "ingredients": ["hyaluronic acid"], "usage": "Morning and night", "price_inr": 800},
+    {"id": "prd-barrier-cream", "kind": "product", "name": "Ceramide Barrier Cream", "concerns": ["dryness", "redness"], "skin_types": ["dry", "normal"], "contraindications": [], "ingredients": ["ceramides", "cholesterol"], "usage": "Morning and night", "price_inr": 1100},
+    {"id": "prd-eye-cream", "kind": "product", "name": "Peptide Eye Cream", "concerns": ["dark_circles", "wrinkles"], "skin_types": [], "contraindications": [], "ingredients": ["peptides", "caffeine"], "usage": "Morning and night, ring finger", "price_inr": 1300},
+    {"id": "prd-sunscreen", "kind": "product", "name": "Sunscreen SPF 50 PA++++", "concerns": ["pigmentation", "wrinkles", "redness", "dullness", "acne", "pores", "dryness", "dark_circles"], "skin_types": [], "contraindications": [], "ingredients": ["zinc oxide"], "usage": "Every morning, reapply every 3 hours outdoors", "price_inr": 900}
+  ]
+}

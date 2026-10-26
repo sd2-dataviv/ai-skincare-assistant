@@ -1,0 +1,6 @@
+.venv
+.env
+var
+tests
+__pycache__
+*.egg-info

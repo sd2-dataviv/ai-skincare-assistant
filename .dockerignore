@@ -1,0 +1,9 @@
+**/.venv
+**/node_modules
+**/dist
+**/__pycache__
+**/*.egg-info
+**/.env
+.pgdata
+var
+e2e

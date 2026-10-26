@@ -1,0 +1,43 @@
+{
+  "version": "rules-sample-2026.10",
+  "note": "Clinic rules for programmes, recommendations and escalation. Needs clinical sign-off before production.",
+  "programmes": {
+    "acne": {"label": "Acne Care Programme", "concerns": ["acne", "pores", "acne_scars"]},
+    "pigmentation": {"label": "Pigmentation Programme", "concerns": ["pigmentation"]},
+    "anti_ageing": {"label": "Anti-ageing Programme", "concerns": ["wrinkles"]},
+    "glow_hydration": {"label": "Glow & Hydration Programme", "concerns": ["dullness", "dryness", "dark_circles", "redness"]},
+    "general": {"label": "General Skin Consultation", "concerns": []}
+  },
+  "concern_keywords": {
+    "acne": ["acne", "pimple", "breakout", "breaking out", "break out", "zit", "blackhead", "whitehead"],
+    "acne_scars": ["scar", "marks from acne", "acne marks"],
+    "pigmentation": ["pigment", "dark spot", "spots", "melasma", "tan", "uneven", "patches", "blemish"],
+    "wrinkles": ["wrinkle", "fine line", "ageing", "aging", "sagging", "crow"],
+    "dark_circles": ["dark circle", "under eye", "under-eye", "puffy"],
+    "redness": ["red", "rosacea", "irritat", "sensitive"],
+    "pores": ["pore", "oily", "oil"],
+    "dullness": ["dull", "glow", "tired", "radian"],
+    "dryness": ["dry", "flaky", "tight"]
+  },
+  "recommendation": {
+    "finding_threshold": 40,
+    "max_services": 2,
+    "max_products": 4,
+    "always_include": ["prd-sunscreen"],
+    "doctor_service_triggers": [
+      {"concern": "wrinkles", "min_severity": 65, "min_age": 25, "item": "doc-antiageing-consult"},
+      {"concern": "acne", "min_severity": 70, "item": "doc-acne-consult"}
+    ]
+  },
+  "medication_conflicts": {
+    "isotretinoin": ["isotretinoin", "accutane", "isotroin", "sotret", "roaccutane"],
+    "photosensitising": ["doxycycline", "minocycline", "tetracycline", "hydrochlorothiazide", "amiodarone", "st john"],
+    "anticoagulant": ["warfarin", "blood thinner", "apixaban", "rivaroxaban", "clopidogrel", "heparin"]
+  },
+  "allergy_tags": {
+    "salicylate_allergy": ["salicylic", "aspirin", "salicylate"],
+    "fragrance_allergy": ["fragrance", "perfume", "parfum"]
+  },
+  "escalation_medication": ["isotretinoin", "anticoagulant"],
+  "human_request_phrases": ["talk to a doctor", "speak to a doctor", "real doctor", "human", "real person", "talk to someone", "speak to someone", "doctor please", "connect me to a doctor", "i want a doctor"]
+}
