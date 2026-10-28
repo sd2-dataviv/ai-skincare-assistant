@@ -54,7 +54,7 @@ def build_system_prompt(s: State) -> str:
     if s.client:
         ctx["client"] = {"first_name": s.client.full_name.split()[0], "age": age_of(s.client), "gender": s.client.gender}
     if s.visit:
-        ctx["visit"] = {"programme": programme_label(s.visit.programme), "session_number": s.visit.session_number,
+        ctx["visit"] = {"programme": programme_label(s.visit.programme, s.visit.session_number), "session_number": s.visit.session_number,
                         "concern": s.visit.concern_text, "concerns": s.visit.concerns}
     if stage == "assess" and s.client:
         nq = assessment_svc.next_question(s.assessment, s.client)
@@ -177,7 +177,7 @@ async def client_memory(db, s: State) -> dict:
     mem["client"] = {"first_name": c.full_name.split()[0], "age": age_of(c), "gender": c.gender,
                      "returning": c.source != "ai" or None}
     if s.visit:
-        mem["today"] = {"concern_in_their_words": s.visit.concern_text, "programme": programme_label(s.visit.programme),
+        mem["today"] = {"concern_in_their_words": s.visit.concern_text, "programme": programme_label(s.visit.programme, s.visit.session_number),
                         "session": s.visit.session_number}
     if s.assessment and s.assessment.answers:
         from app.knowledge import question as get_q
@@ -197,7 +197,7 @@ async def client_memory(db, s: State) -> dict:
         history = []
         for v in past:
             rx = (await db.execute(select(Prescription).where(Prescription.visit_id == v.id))).scalar_one_or_none()
-            history.append({"date": v.created_at.date().isoformat(), "programme": programme_label(v.programme),
+            history.append({"date": v.created_at.date().isoformat(), "programme": programme_label(v.programme, v.session_number),
                             "concern": v.concern_text, "plan": [i["name"] for i in rx.items] if rx and rx.status == "approved" else None})
         mem["previous_visits"] = history
         note = (await db.execute(select(Note).where(Note.client_id == c.id).order_by(Note.created_at.desc()).limit(1))).scalar_one_or_none()

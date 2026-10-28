@@ -4,6 +4,7 @@ import { StageRail, TopBar } from "../components/Chrome";
 import { Mirror, type MirrorHandle } from "../components/Mirror";
 import HistoryPanel from "../components/HistoryPanel";
 import ResultsPanel from "../components/ResultsPanel";
+import { useTalkingAvatar } from "../avatar/useTalkingAvatar";
 import { api, ApiError, uid } from "../lib/api";
 import { speechInputSupported, speechOutputSupported, useSpeechInput, useSpeechOutput } from "../lib/speech";
 import type { Message, TurnPayload, UiHints } from "../lib/types";
@@ -29,7 +30,24 @@ export default function Session() {
   const listRef = useRef<HTMLDivElement>(null);
   const spokenRef = useRef<Set<string>>(new Set((first?.messages ?? []).map((m) => m.id)));
 
-  const { speaking, speak, cancel } = useSpeechOutput("en-IN");
+  const { speaking: browserSpeaking, speak: browserSpeak, cancel: browserCancel } = useSpeechOutput("en-IN");
+  // The clinic's talking avatar says the replies when it is set up and reachable; otherwise the browser's voice does.
+  const avatar = useTalkingAvatar(ui !== null);
+  const { speak: avatarSpeak, stop: avatarStop, onFallback } = avatar;
+  const speaking = browserSpeaking || avatar.speaking;
+  const voiceOnRef = useRef(voiceOn);
+  voiceOnRef.current = voiceOn;
+  const say = useCallback((lines: string[]) => {
+    if (!lines.length) return;
+    if (!avatarSpeak(lines.join(" "))) lines.forEach(browserSpeak);
+  }, [avatarSpeak, browserSpeak]);
+  const cancel = useCallback(() => {
+    browserCancel();
+    avatarStop();
+  }, [browserCancel, avatarStop]);
+  useEffect(() => onFallback((lines) => {
+    if (voiceOnRef.current) lines.forEach(browserSpeak);
+  }), [onFallback, browserSpeak]);
 
   const absorb = useCallback((payload: TurnPayload) => {
     setUi(payload.ui);
@@ -47,11 +65,11 @@ export default function Session() {
   useEffect(() => {
     const fresh = messages.filter((m) => (m.role === "assistant" || m.role === "doctor") && !spokenRef.current.has(m.id));
     fresh.forEach((m) => spokenRef.current.add(m.id));
-    if (voiceOn && fresh.length) fresh.forEach((m) => speak(m.content));
-  }, [messages, voiceOn, speak]);
+    if (voiceOn && fresh.length) say(fresh.map((m) => m.content));
+  }, [messages, voiceOn, say]);
 
   useEffect(() => {
-    if (first && voiceOn) first.messages.forEach((m) => speak(m.content));
+    if (first && voiceOn) say(first.messages.map((m) => m.content));
     // The greeting handed over by the start page is used once. Clear it from this history entry so that coming
     // back here (e.g. Back from the summary) reloads the real conversation instead of replaying the greeting.
     if (first) nav(location.pathname, { replace: true, state: null });
@@ -202,7 +220,8 @@ export default function Session() {
           <div className="mirror-wrap">
             <div style={{ display: "grid", gap: "0.9rem", justifyItems: "center", width: "100%" }}>
               <Mirror ref={mirrorRef} mode={cameraMode ? "camera" : "avatar"} listening={speech.listening}
-                speaking={speaking} handedOver={handedOver} />
+                speaking={speaking} handedOver={handedOver} avatarCanvasRef={avatar.canvasRef}
+                showAvatar={avatar.state === "ready" || avatar.state === "resting"} />
               <p className="mirror-status" aria-live="polite">{status}</p>
               {cameraMode && ui.camera && (
                 <div className="poses" aria-label="Photos">
@@ -226,14 +245,17 @@ export default function Session() {
                 </button>
               </>
             ) : speechInputSupported() ? (
-              <button className={`mic${speech.listening ? " on" : ""}`} onClick={speech.listening ? speech.stop : speech.start}
+              <button className={`mic${speech.listening ? " on" : ""}`} onClick={speech.listening ? speech.stop : () => { cancel(); speech.start(); }}
                 aria-pressed={speech.listening} aria-label={speech.listening ? "Stop listening" : "Talk"} disabled={busy}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
                   <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
                 </svg>
               </button>
             ) : null}
-            {speechOutputSupported() && (
+            {avatar.state === "unavailable" && (
+              <button className="btn quiet small" onClick={avatar.retry} title={avatar.detail}>Retry avatar</button>
+            )}
+            {(speechOutputSupported() || avatar.active) && (
               <button className="btn quiet small" onClick={() => { if (voiceOn) cancel(); setVoiceOn(!voiceOn); }} aria-pressed={voiceOn}>
                 {voiceOn ? "Voice on" : "Voice off"}
               </button>

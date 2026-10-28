@@ -34,7 +34,7 @@ async def queue(_: User = Depends(doctor_or_admin), db: AsyncSession = Depends(g
     )).all()
     for ap, visit, client in rows:
         items.append({"type": "approval", "id": str(ap.id), "visit_id": str(visit.id), "client_name": client.full_name,
-                      "age": age_of(client), "programme": programme_label(visit.programme),
+                      "age": age_of(client), "programme": programme_label(visit.programme, visit.session_number),
                       "session_number": visit.session_number, "summary": "Draft plan awaiting approval",
                       "created_at": ap.created_at.isoformat(), "waiting_minutes": _minutes_since(ap.created_at),
                       "status": ap.status})
@@ -52,7 +52,7 @@ async def queue(_: User = Depends(doctor_or_admin), db: AsyncSession = Depends(g
                       "conversation_id": str(esc.conversation_id) if esc.conversation_id else None,
                       "client_name": client.full_name if client else "Unidentified client",
                       "age": age_of(client) if client else None,
-                      "programme": programme_label(visit.programme) if visit else None,
+                      "programme": programme_label(visit.programme, visit.session_number) if visit else None,
                       "session_number": visit.session_number if visit else None,
                       "trigger": esc.trigger, "summary": TRIGGER_TEXT.get(esc.trigger, esc.trigger),
                       "details": esc.details, "created_at": esc.created_at.isoformat(),
@@ -65,7 +65,7 @@ async def queue(_: User = Depends(doctor_or_admin), db: AsyncSession = Depends(g
         if str(visit.id) in listed:
             continue
         items.append({"type": "with_doctor", "id": str(visit.id), "visit_id": str(visit.id), "client_name": client.full_name,
-                      "age": age_of(client), "programme": programme_label(visit.programme),
+                      "age": age_of(client), "programme": programme_label(visit.programme, visit.session_number),
                       "session_number": visit.session_number, "summary": "With a doctor: plan still to be written",
                       "created_at": visit.created_at.isoformat(), "waiting_minutes": _minutes_since(visit.created_at),
                       "status": visit.status})
@@ -79,7 +79,7 @@ async def queue(_: User = Depends(doctor_or_admin), db: AsyncSession = Depends(g
         visit = await db.get(Visit, t.visit_id) if t.visit_id else None
         items.append({"type": "message", "id": str(t.id), "thread_id": str(t.id),
                       "visit_id": str(visit.id) if visit else None, "client_name": client.full_name,
-                      "age": age_of(client), "programme": programme_label(visit.programme) if visit else None,
+                      "age": age_of(client), "programme": programme_label(visit.programme, visit.session_number) if visit else None,
                       "session_number": visit.session_number if visit else None, "trigger": t.handover_reason,
                       "urgent": t.handover_reason == "medical_concern",
                       "summary": "Waiting for a reply: " + HANDOVER_TEXT.get(t.handover_reason or "",

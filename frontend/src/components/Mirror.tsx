@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
 
 export interface MirrorHandle {
   capture: () => Promise<Blob | null>;
@@ -9,9 +9,14 @@ interface Props {
   listening: boolean;
   speaking: boolean;
   handedOver: boolean;
+  /** The talking avatar's canvas (src/avatar). Always mounted, so the avatar keeps its session while the camera is on. */
+  avatarCanvasRef?: RefObject<HTMLCanvasElement>;
+  /** Show the talking avatar; otherwise the abstract face (no avatar set up, still connecting, or unavailable). */
+  showAvatar?: boolean;
 }
 
-// Slot for the real-time talking avatar (e.g. the FeatherTalk/WebRTC stream). When unset, an abstract face is shown.
+// An embedded stream page can replace the abstract face too (VITE_AVATAR_STREAM_URL); the clinic's AI Avatar service
+// (src/avatar) takes precedence when it is set up.
 const AVATAR_URL = import.meta.env.VITE_AVATAR_STREAM_URL as string | undefined;
 
 function AbstractFace({ speaking }: { speaking: boolean }) {
@@ -27,7 +32,8 @@ function AbstractFace({ speaking }: { speaking: boolean }) {
   );
 }
 
-export const Mirror = forwardRef<MirrorHandle, Props>(function Mirror({ mode, listening, speaking, handedOver }, ref) {
+export const Mirror = forwardRef<MirrorHandle, Props>(function Mirror(
+  { mode, listening, speaking, handedOver, avatarCanvasRef, showAvatar = false }, ref) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [camError, setCamError] = useState<string | null>(null);
@@ -75,9 +81,13 @@ export const Mirror = forwardRef<MirrorHandle, Props>(function Mirror({ mode, li
   }));
 
   const cls = ["mirror", listening && "listening", speaking && "speaking", handedOver && "handed"].filter(Boolean).join(" ");
+  const avatarShown = mode !== "camera" && showAvatar;
   return (
     <div className={cls}>
-      {mode === "camera" ? (
+      {avatarCanvasRef && (
+        <canvas ref={avatarCanvasRef} className="talking-avatar" hidden={!avatarShown} aria-label="AI assistant" role="img" />
+      )}
+      {avatarShown ? null : mode === "camera" ? (
         <>
           <video ref={videoRef} className="selfie" playsInline muted aria-label="Camera preview" />
           <div className="guide" aria-hidden />

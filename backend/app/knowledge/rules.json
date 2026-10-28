@@ -1,13 +1,22 @@
 {
   "version": "rules-sample-2026.10",
-  "note": "Clinic rules for programmes, recommendations and escalation. Needs clinical sign-off before production.",
+  "note": "Clinic rules for services (programmes), recommendations and escalation. Needs clinical sign-off before production.",
   "programmes": {
-    "acne": {"label": "Acne Care Programme", "concerns": ["acne", "pores", "acne_scars"]},
-    "pigmentation": {"label": "Pigmentation Programme", "concerns": ["pigmentation"]},
-    "anti_ageing": {"label": "Anti-ageing Programme", "concerns": ["wrinkles"]},
-    "glow_hydration": {"label": "Glow & Hydration Programme", "concerns": ["dullness", "dryness", "dark_circles", "redness"]},
-    "general": {"label": "General Skin Consultation", "concerns": []}
+    "acne": {"label": "Acne Scription", "concerns": ["acne", "pores", "acne_scars"]},
+    "pigmentation": {"label": "Pigmentation Scription", "concerns": ["pigmentation"]},
+    "age": {"label": "Age Scription", "concerns": ["wrinkles"]},
+    "skin": {"label": "Skin Scription", "concerns": ["dullness", "dryness", "dark_circles", "redness"]},
+    "anti_aging": {"label": "Anti Aging", "doctor_led": true, "concerns": ["wrinkles"],
+                   "keywords": ["botox", "filler", "injectable", "injection", "thread lift", "hifu", "skin tightening", "face lift", "facelift"]},
+    "medical": {"label": "Medical Consultation", "follow_up_label": "Medical Follow Up", "doctor_led": true, "concerns": [],
+                "keywords": ["dermatologist", "medical consultation", "eczema", "psoriasis", "dermatitis", "rash", "fungal", "ringworm",
+                             "vitiligo", "hair loss", "hair fall", "alopecia", "mole", "wart", "hives", "urticaria", "itch", "cyst", "boil"]}
   },
+  "programme_note": "Each visit is filed under one service. Doctor-led services (keywords) win over skin concerns; a returning client continuing the same service is a follow-up (session 2 onwards): Follow Up, or Medical Follow Up after a Medical Consultation.",
+  "programme_priority": ["medical", "anti_aging", "acne", "pigmentation", "age", "skin"],
+  "default_programme": "skin",
+  "follow_up_label": "Follow Up",
+  "legacy_programmes": {"anti_ageing": "age", "glow_hydration": "skin", "general": "skin"},
   "concern_keywords": {
     "acne": ["acne", "pimple", "breakout", "breaking out", "break out", "zit", "blackhead", "whitehead"],
     "acne_scars": ["scar", "marks from acne", "acne marks"],
@@ -24,6 +33,7 @@
     "max_services": 2,
     "max_products": 4,
     "always_include": ["prd-sunscreen"],
+    "programme_items": {"anti_aging": ["doc-antiageing-consult"]},
     "doctor_service_triggers": [
       {"concern": "wrinkles", "min_severity": 65, "min_age": 25, "item": "doc-antiageing-consult"},
       {"concern": "acne", "min_severity": 70, "item": "doc-acne-consult"}

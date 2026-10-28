@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import auth, catalogue, clients, conversations, doctor, me, messages, model_images, ot, platform_sso, records, visits
+from app.api import auth, avatar, catalogue, clients, conversations, doctor, me, messages, model_images, ot, platform_sso, records, visits
 from app.config import DEFAULT_SECRET, get_settings
 from app.db import dispose_engine
 from app.logging_setup import setup_logging
@@ -59,6 +59,7 @@ def create_app() -> FastAPI:
     @app.get("/api/health", tags=["health"])
     async def health():
         from app.integrations.platform_auth import gateway_tokens
+        from app.integrations.avatar import status as avatar_status
         from app.integrations.skin_models import wants_token
 
         urls = [u for u in (s.skin_diagnosis_ws_url, s.skin_post_treatment_ws_url) if u]
@@ -66,11 +67,12 @@ def create_app() -> FastAPI:
                 "skin_models": {"diagnosis": bool(s.skin_diagnosis_ws_url), "post_treatment": bool(s.skin_post_treatment_ws_url),
                                 # where the model gateway token comes from (never the token itself)
                                 "gateway_token": gateway_tokens.status() if any(wants_token(u) for u in urls) else None},
-                "platform_sso": s.wfh_auth_mode != "none"}
+                "platform_sso": s.wfh_auth_mode != "none",
+                "avatar": avatar_status()}
 
     # platform_sso shares the /auth prefix: POST /api/auth/platform-session sits next to /api/auth/login.
     for r in (auth.router, platform_sso.router, clients.router, visits.router, conversations.router, doctor.router,
-              catalogue.router, catalogue.public, ot.router, records.router, me.router, messages.router, model_images.router):
+              catalogue.router, catalogue.public, ot.router, records.router, me.router, messages.router, model_images.router, avatar.router):
         app.include_router(r, prefix="/api")
     return app
 

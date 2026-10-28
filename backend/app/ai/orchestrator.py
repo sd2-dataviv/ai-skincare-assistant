@@ -89,7 +89,7 @@ def build_ui(s: State) -> dict:
         "input": "text", "quick_replies": [], "question": None, "camera": None,
         "client_first_name": s.client.full_name.split()[0] if s.client else None,
         "visit_id": str(s.visit.id) if s.visit else None,
-        "programme": programme_label(s.visit.programme) if s.visit else None,
+        "programme": programme_label(s.visit.programme, s.visit.session_number) if s.visit else None,
         "session_number": s.visit.session_number if s.visit else None,
         "results_available": latest(s.analyses, "diagnosis") is not None,
         "approval_status": s.approval.status if s.approval else None,
@@ -282,6 +282,14 @@ async def _handle_user_message(db: AsyncSession, conv_id: uuid.UUID, text: str, 
             q = assessment_svc.next_question(s.assessment, s.client)
             q = q or {}
             ignore = " ".join([q.get("text", ""), q.get("hint", "")] + [o["label"] for o in q.get("options", [])])
+        # A medical problem described before the visit starts is filed as a Medical Consultation for the doctor.
+        intro = None
+        if s.stage == "concern" and escalation_svc.detect_medical_concern(text, ignore):
+            from app.ai.agents import open_medical_consultation
+
+            intro = await open_medical_consultation(ctx, "medical_concern", text)
+            if intro:
+                s = await ctx.state()
         new = await escalation_svc.check_and_escalate(db, s.conversation, s.visit, s.client, s.assessment, s.analyses,
                                                       user_text=text, medical_ignore=ignore)
         if new:
@@ -293,6 +301,8 @@ async def _handle_user_message(db: AsyncSession, conv_id: uuid.UUID, text: str, 
                                 status="ok", stage=s.stage, reason=f"Rule: {escalation_svc.TRIGGER_TEXT[esc.trigger]}"))
             await db.commit()
             texts = await agent.on_event(ctx, "escalated", {"triggers": [e.trigger for e in new]})
+            if intro:
+                texts = texts[:-1] + [intro] + texts[-1:]  # before the hand-over message
         else:
             before = len(layer.escalations)
             try:
@@ -347,7 +357,7 @@ async def latest_conversation_for_visit(db: AsyncSession, visit_id: uuid.UUID) -
 
 def _note_text(s: State, doctor: User | None) -> tuple[str, list[str]]:
     v, a = s.visit, s.assessment
-    parts = [f"AI consultation, {programme_label(v.programme)} session {v.session_number}."]
+    parts = [f"AI consultation, {programme_label(v.programme, v.session_number)} session {v.session_number}."]
     if v.concern_text:
         parts.append(f'Concern: "{v.concern_text[:300]}".')
     if a and a.skin_type:

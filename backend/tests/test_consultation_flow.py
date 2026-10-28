@@ -28,7 +28,7 @@ async def test_full_consultation_happy_path(client, operator, doctor):
     # 2. Understand the concern
     await s.say("I have dark spots on my cheeks and some acne on my forehead")
     assert s.ui["stage"] == "assess"
-    assert s.ui["programme"] == "Acne Care Programme"
+    assert s.ui["programme"] == "Acne Scription"
     assert s.ui["question"]["id"] == "q01"
 
     # 3. Assess (Know your Skin)

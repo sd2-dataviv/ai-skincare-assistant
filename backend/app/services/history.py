@@ -39,7 +39,7 @@ async def client_history(db: AsyncSession, client_id: uuid.UUID, exclude: uuid.U
     for v in visits:
         rx = (await db.execute(select(Prescription).where(Prescription.visit_id == v.id))).scalar_one_or_none()
         approved = rx is not None and rx.status == "approved"
-        item = {"visit_id": str(v.id), "date": v.created_at.date().isoformat(), "programme": programme_label(v.programme),
+        item = {"visit_id": str(v.id), "date": v.created_at.date().isoformat(), "programme": programme_label(v.programme, v.session_number),
                 "session_number": v.session_number, "concern": v.concern_text,
                 "status": CLIENT_STATUS.get(v.status, v.status.replace("_", " ").capitalize()), "approved": approved,
                 "findings": [], "plan": [], "next_session_date": None, "appointments": []}

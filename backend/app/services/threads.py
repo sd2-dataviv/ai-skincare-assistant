@@ -105,7 +105,7 @@ def message_out(m: ThreadMessage) -> dict:
 def _title(visit: Visit | None) -> tuple[str, str | None]:
     if visit is None:
         return "Messages with the clinic", None
-    return f"{programme_label(visit.programme)}, session {visit.session_number}", visit.created_at.date().isoformat()
+    return f"{programme_label(visit.programme, visit.session_number)}, session {visit.session_number}", visit.created_at.date().isoformat()
 
 
 async def _unread(db: AsyncSession, threads: list[Thread], for_staff: bool) -> dict[uuid.UUID, int]:
@@ -151,7 +151,7 @@ async def thread_out(db: AsyncSession, t: Thread, unread: int = 0, for_staff: bo
             "handover_text": HANDOVER_TEXT.get(t.handover_reason or "", None),
             "handover_details": t.handover_details,
             "assigned_to": assigned.full_name if assigned else None,
-            "visit": ({"id": str(visit.id), "status": visit.status, "programme": programme_label(visit.programme),
+            "visit": ({"id": str(visit.id), "status": visit.status, "programme": programme_label(visit.programme, visit.session_number),
                        "session_number": visit.session_number, "date": visit.created_at.date().isoformat()}
                       if visit else None),
         })

@@ -117,6 +117,11 @@ async def recommend(db: AsyncSession, visit: Visit, client: Client, assessment: 
         sc = diagnosis.get(trig["concern"], {}).get("score", 0)
         if sc >= trig["min_severity"] and (age or 0) >= trig.get("min_age", 0) and trig["item"] in catalogue:
             add(catalogue[trig["item"]], trig["concern"], f"Score {sc:.0f}/100 is high enough to need a doctor's assessment.")
+    # Items a service always includes (Anti Aging is doctor-led: the doctor's anti-ageing consultation).
+    from app.services.visits import canonical, programme_label
+    for iid in cfg.get("programme_items", {}).get(canonical(visit.programme), []):
+        if iid in catalogue:
+            add(catalogue[iid], None, f"Part of the {programme_label(visit.programme)} service.")
     for pid in cfg["always_include"]:
         if pid in catalogue:
             add(catalogue[pid], None, "Daily sun protection supports every treatment and prevents new damage.")

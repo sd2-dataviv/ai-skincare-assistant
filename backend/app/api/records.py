@@ -111,7 +111,7 @@ async def records(
             "mobile": mask_mobile(client.mobile) if client else None, "age": age_of(client) if client else None,
             "started_at": conv.created_at.isoformat(), "last_activity": (last_msg or conv.created_at).isoformat(),
             "messages": n_msgs or 0,
-            "programme": programme_label(visit.programme) if visit else None,
+            "programme": programme_label(visit.programme, visit.session_number) if visit else None,
             "session_number": visit.session_number if visit else None,
             "concern": visit.concern_text if visit else None,
             "outcome": code, "outcome_label": label,

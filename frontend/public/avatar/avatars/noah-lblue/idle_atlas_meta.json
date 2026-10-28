@@ -1,0 +1,1 @@
+{"frame_count": 57, "cycle_count": 114, "grid_cols": 8, "grid_rows": 8, "cells_per_page": 64, "pages": 1, "tile_w": 512, "tile_h": 512, "fps": 25, "pingpong": true, "has_alpha": true, "source": "noah_idle_B_clubbed.mp4 + rembg u2net_human_seg rematte", "ver": 1781750014}

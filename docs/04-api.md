@@ -115,6 +115,12 @@ See [07-skin-models.md](07-skin-models.md). Pictures not allowed to the caller a
 Summaries (`/visits/{id}/summary`, `/me/visits/{id}/summary`, `/public/summaries/{token}`) and the clinic device's
 `/conversations/{id}/results` carry `images` (empty until the plan is approved).
 
+## Services
+
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| GET | `/knowledge/services` | any clinic staff | The clinic's consultation services: `[{"key", "label", "doctor_led", "follow_up"}]` (Acne / Pigmentation / Age / Skin Scription, Anti Aging, Medical Consultation; follow-ups "Follow Up (…)" and "Medical Follow Up") |
+
 ## Platform SSO
 
 See [08-platform-sso.md](08-platform-sso.md).
@@ -127,6 +133,15 @@ See [08-platform-sso.md](08-platform-sso.md).
 
 Ten endpoints are shared with other apps and AI agents through WorkflowHub (`node.yaml` `api:`). Those calls carry a
 signed `X-Wfh-User` header instead of a session token; see 08-platform-sso.md.
+
+## Talking avatar
+
+See [09-avatar.md](09-avatar.md).
+
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| POST | `/avatar/session` | operator, admin | `{"ticket", "avatar_id", "language", "path"}`; the ticket lasts 60 s and opens one socket. 404 when `AVATAR_WS_URL` is empty |
+| WS | `/avatar/ws?ticket=` | holder of a ticket | Relay to the AI Avatar service in Direct mode. Send `{"type":"speak","text"}`, `{"type":"stop"}` or `{"type":"language","value"}`; receive the avatar's frames. Closes 4401 bad ticket, 4502 account refused, 4503 no platform session, 4504 avatar unavailable, 4408 idle, 1011 service closed |
 
 ## Errors
 

@@ -78,7 +78,7 @@ async def build_summary(db: AsyncSession, visit: Visit) -> dict:
         "visit_id": str(visit.id),
         "client_first_name": client.full_name.split()[0] if client else "",
         "date": visit.created_at.date().isoformat(),
-        "programme": programme_label(visit.programme),
+        "programme": programme_label(visit.programme, visit.session_number),
         "session_number": visit.session_number,
         "skin_type": assessment.skin_type if assessment else None,
         "sensitive": bool(assessment and assessment.sensitive),

@@ -49,7 +49,7 @@ async def test_rest_actions_mirror_ai_actions(client, operator, doctor):
                            headers={**operator, "Idempotency-Key": "visit-key-1"})
     assert v.json()["id"] == v2.json()["id"]  # exactly once
     vid = v.json()["id"]
-    assert v.json()["programme"] == "anti_ageing"
+    assert v.json()["programme"] == "age"
     answers = {f"q{i:02d}": "x" for i in range(1, 19)}
     bad = await client.put(f"/api/visits/{vid}/assessment", json={"answers": answers}, headers=operator)
     assert bad.status_code == 422

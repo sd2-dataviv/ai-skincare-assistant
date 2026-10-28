@@ -1,0 +1,1 @@
+{"frame_count": 57, "cycle_count": 114, "grid_cols": 8, "grid_rows": 8, "cells_per_page": 64, "pages": 1, "tile_w": 512, "tile_h": 512, "fps": 25, "pingpong": true, "has_alpha": true, "source": "vedant_sir green dataset frames 0-56 (47-76 replaced by 17-46), renderer _matte_frame soft green (MATTE_SOFT_GREEN_AVATARS), backend tools/bake_idle_atlas.py", "ver": 1792217158}

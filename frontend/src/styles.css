@@ -126,6 +126,8 @@ textarea { resize: vertical; }
 @keyframes breathe { 50% { box-shadow: inset 0 0 0 10px var(--skin), inset 0 0 70px rgba(233, 183, 156, 0.8); } }
 .mirror video, .mirror canvas, .mirror iframe { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border: 0; }
 .mirror video.selfie { transform: scaleX(-1); }
+.mirror canvas.talking-avatar { object-fit: cover; object-position: 50% 18%; }
+.mirror canvas.talking-avatar[hidden] { display: none; }
 .mirror .guide { position: absolute; inset: 14% 18% 10%; border: 2px dashed rgba(255, 255, 255, 0.85); border-radius: 50%; z-index: 3; }
 .avatar-face { position: absolute; inset: 0; display: grid; place-items: center; }
 .avatar-face svg { width: 62%; height: auto; }

@@ -25,6 +25,14 @@ async def get_questionnaire(_: User = Depends(staff)):
     return questionnaire()
 
 
+@router.get("/knowledge/services")
+async def get_services(_: User = Depends(staff)):
+    """The clinic's consultation services each visit is filed under, with each one's follow-up name."""
+    from app.services.visits import services
+
+    return services()
+
+
 @public.get("/summaries/{token}")
 async def public_summary(token: str, db: AsyncSession = Depends(get_db)):
     """Token-gated, expiring, read-only summary for the client (approved plans only)."""

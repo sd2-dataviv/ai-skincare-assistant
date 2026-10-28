@@ -57,7 +57,7 @@ def test_skin_type_derivation():
 def test_concern_detection_and_programme():
     assert set(detect_concerns("dark spots and pimples")) == {"pigmentation", "acne"}
     assert programme_for(["pigmentation"]) == "pigmentation"
-    assert programme_for([]) == "general"
+    assert programme_for([]) is None
 
 
 def test_human_request_detection():

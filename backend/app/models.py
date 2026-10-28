@@ -68,7 +68,7 @@ class Visit(TimestampMixin, Base):
     __tablename__ = "visits"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uid)
     client_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("clients.id", ondelete="CASCADE"), index=True)
-    programme: Mapped[str] = mapped_column(String(40))  # acne | pigmentation | anti_ageing | glow_hydration | general
+    programme: Mapped[str] = mapped_column(String(40))  # service: acne | pigmentation | age | skin | anti_aging | medical (rules.json)
     session_number: Mapped[int] = mapped_column(Integer, default=1)
     status: Mapped[str] = mapped_column(String(30), default="in_progress", index=True)
     concern_text: Mapped[str | None] = mapped_column(Text)

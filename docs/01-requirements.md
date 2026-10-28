@@ -24,7 +24,13 @@ IDs are traced to the spec section in brackets.
 ### Identity and visit
 - **FR-01** [§02, §03.1] The AI collects the client's mobile number, sends an OTP and verifies it. Limits: 5 wrong attempts, 3 sends per 10 minutes, 5-minute expiry.
 - **FR-02** [§02] After verification the AI finds the client in the local DB. If not found, it imports them from D365. If D365 doesn't have them either, it collects name, date of birth and gender and creates the client.
-- **FR-03** [§02] The AI starts a visit. It picks the programme from the client's stated concern and their history, and sets the next session number in that programme.
+- **FR-03** [§02] The AI starts a visit. It files it under one of the clinic's services, picked from the client's stated concern and their history, and sets the next session number in that service. *(Services added 28 Oct 2026.)*
+    - **Scriptions:** Acne Scription, Pigmentation Scription, Age Scription and Skin Scription, picked from the main skin concern (Skin Scription when nothing specific is named).
+    - **Doctor-led services, which win over skin concerns:**
+        - **Anti Aging:** Botox, fillers, injectables, thread lift, HIFU or skin tightening. The doctor's anti-ageing consultation is added to the plan.
+        - **Medical Consultation:** a medical skin condition such as a rash, eczema, psoriasis, a fungal infection, hair loss, a mole or a wart, or a request for a dermatologist.
+    - **Follow-ups:** a returning client continuing the same service is its follow-up from session 2, named "Follow Up (Acne Scription)", or "Medical Follow Up" after a Medical Consultation.
+    - **Where they are set:** the services, their keywords and the follow-up names are in `knowledge/rules.json` (`programmes`), and `GET /api/knowledge/services` lists them.
 - **FR-04** [§03.2] The AI records the concern in the client's own words and extracts structured concerns from it (acne, pigmentation, wrinkles and so on).
 
 ### Know your Skin

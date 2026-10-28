@@ -66,6 +66,22 @@ ESCALATION_REASON = {
     "medical_concern": "what you've described needs a doctor to look at it properly",
 }
 
+async def open_medical_consultation(ctx: TurnContext, trigger: str, text: str) -> str | None:
+    """A medical problem raised before any visit was started (the client has just described it) is filed as a Medical
+    Consultation (or Medical Follow Up) before the doctor takes over, so the doctor sees it under that service."""
+    s = await ctx.state()
+    if trigger != "medical_concern" or s.stage != "concern" or s.client is None or s.visit is not None:
+        return None
+    r = await ctx.layer.call("start_visit", {"concern_text": text, "service": "medical"},
+                             "Medical problem described: filed as a medical consultation for the doctor.")
+    if not r["ok"]:
+        return None
+    from app.services.visits import programme_label
+
+    d = r["data"]
+    return f"I've opened a {programme_label(d['programme'], d['session_number'])} for you (session {d['session_number']})."
+
+
 ACKS = ["Got it.", "Thanks.", "Okay, noted.", "Thank you.", "Great, thanks.", "Noted."]
 FILLER = {"sorry", "ok", "okay", "hmm", "hm", "what", "huh", "?", "pardon", "wait", "one sec", "hold on", "yes", "no idea"}
 
@@ -373,7 +389,8 @@ class ScriptedAgent:
         return [f"{welcome}, {d['first_name']}! What would you like help with today? Tell me in your own words."]
 
     async def _concern(self, ctx: TurnContext, s: State, text: str) -> list[str]:
-        if len(text.split()) < 3 and not any(k in text.lower() for k in ("acne", "spot", "pigment", "wrinkle", "dry", "oily", "dull", "red", "pore", "tan", "circle")):
+        from app.services.visits import detect_concerns, programme_for
+        if len(text.split()) < 3 and not (detect_concerns(text) or programme_for([], text)):
             return ["Tell me a little more about what's bothering you about your skin."]
         r = await ctx.layer.call("start_visit", {"concern_text": text}, "Client described their concern; starting the visit.")
         if not r["ok"]:
@@ -667,9 +684,12 @@ class LLMAgent:
         return parse_decision(msg.get("content"))
 
     async def _hand_over(self, ctx: TurnContext, trigger: str, reply: str | None, text: str) -> list[str]:
+        out = [reply] if reply else []
+        intro = await open_medical_consultation(ctx, trigger, text)
+        if intro:
+            out.append(intro)
         r = await ctx.layer.call("escalate_to_doctor", {"details": text[:300], "trigger": trigger},
                                  f"Client message needs a doctor ({trigger}).", via_llm=True)
-        out = [reply] if reply else []
         return out + [escalation_message([trigger])] if r["ok"] else out + [stage_prompt(await ctx.state())]
 
     async def turn(self, ctx: TurnContext, text: str) -> list[str]:
@@ -712,7 +732,7 @@ class LLMAgent:
             after = await ctx.state()
             if r["ok"] and after.visit is not None and after.stage != "handed_over":
                 from app.services.visits import programme_label
-                intro = (f"I've started your {programme_label(after.visit.programme)}, session {after.visit.session_number}. "
+                intro = (f"I've started your {programme_label(after.visit.programme, after.visit.session_number)}, session {after.visit.session_number}. "
                          "First, a few quick questions about your skin.")
                 return [f"{reply} {intro}" if reply else intro, stage_prompt(after)]
             return [reply] if reply else []

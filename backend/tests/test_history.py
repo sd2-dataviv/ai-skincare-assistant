@@ -24,7 +24,7 @@ async def test_returning_client_sees_their_history(client, operator, doctor):
     assert (await client.get(f"/api/conversations/{s.id}/history", headers=operator)).json() == {"visits": [], "upcoming": []}
     await s.identify()
     assert "Welcome back, Priya! Your last visit was on" in s.last() and "History tab" in s.last()
-    assert "Acne Care Programme, session 1" in s.last()
+    assert "Acne Scription, session 1" in s.last()
     assert s.ui["history_count"] == 1
 
     h = (await client.get(f"/api/conversations/{s.id}/history", headers=operator)).json()

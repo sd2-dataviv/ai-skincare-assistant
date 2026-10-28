@@ -24,7 +24,7 @@ erDiagram
 | Table | Key fields | Notes |
 |---|---|---|
 | `clients` | `mobile` (E.164, unique), `full_name`, `dob`, `gender`, `external_ref`, `source` | `source` is `local`, `d365` or `ai` (created in conversation) |
-| `visits` | `programme`, `session_number`, `status`, `concern_text`, `concerns[]`, `next_session_date` | Status is one of `in_progress`, `awaiting_approval`, `approved`, `escalated` or `completed` |
+| `visits` | `programme` (the service: `acne`, `pigmentation`, `age`, `skin`, `anti_aging`, `medical`; session 2 onwards is its follow-up), `session_number`, `status`, `concern_text`, `concerns[]`, `next_session_date` | Status is one of `in_progress`, `awaiting_approval`, `approved`, `escalated` or `completed` |
 | `assessments` | `answers` (JSONB), `skipped` (JSONB), `skin_type`, `sensitive`, `flags` (JSONB), `completed` | `flags` holds pregnancy, `medication_tags`, `allergy_tags` and questionnaire concerns |
 | `photos` | `pose`, `storage_key`, `quality` (JSONB), `accepted` | The image bytes are kept in storage, not in the DB |
 | `analyses` | `kind` (`diagnosis`, `anti_aging` or `compare`), `engine`, `result`, `confidence` | `compare` stores the change for each concern against the previous visit |
@@ -59,7 +59,7 @@ The spec puts the transcript in one field. Here it is stored as ordered `message
 | `ot_readiness_items` | Pre-treatment checklist per booking: `key`, `label`, `mandatory`, `status` (`pending`, `done`, `not_applicable` or `blocked`), `note`, who and when |
 | `ot_bookings` | A plan treatment booked into a room: `visit_id`, `catalogue_item_id`, `session_index`/`sessions_total`, `status` (`tentative`, `confirmed`, `deferred` or `cancelled`), `room_id`, `starts_at`, `ends_at`, `clear_until` (end + turnover), `source` (`ai` or `staff`), `doctor_id`, `equipment_id`, `equipment_clear_until` (end + machine buffer), `confirmed_at`/`confirmed_by_user_id`, `stage` (`scheduled`, `checked_in`, `in_progress`, `completed` or `no_show`) with `checked_in_at`, `started_at`, `finished_at`, `override_reason` and `overridden_rules`, and `version`. Three exclusion constraints (`btree_gist`) stop tentative or confirmed bookings overlapping on the same room, doctor or machine, and a partial unique index allows one live booking per treatment session. `catalogue_items` gains `equipment_type` and `needs_doctor` |
 | `knowledge/questionnaire.json` | The 18 *Know your Skin* questions. Each option carries scoring (`oil`, `combo`, `sens`), a concern or a safety flag |
-| `knowledge/rules.json` | Programme mapping, concern keywords, recommendation limits, medication-conflict and allergy keyword lists, and phrases that mean "I want a person" |
+| `knowledge/rules.json` | Services (Scriptions, Anti Aging, Medical Consultation, follow-up names) and how they are picked, concern keywords, recommendation limits, medication-conflict and allergy keyword lists, and phrases that mean "I want a person" |
 | `otp_challenges` | HMAC of the code, expiry and attempt count. The code itself is never stored |
 | `summary_shares` | Expiring token for the client's summary link and the masked destination |
 | `idempotency_keys` | The stored response for each `Idempotency-Key` |

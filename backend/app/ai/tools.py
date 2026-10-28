@@ -129,7 +129,7 @@ async def h_find_or_import_client(layer: "ActionLayer", s: State, a: dict) -> di
     return {"status": how, "client_id": str(client.id), "first_name": client.full_name.split()[0],
             "age": age_of(client), "gender": client.gender, "returning": how == "found",
             "past_visits": await count_past(layer.db, client.id, None),
-            "last_visit": {"date": prev.created_at.date().isoformat(), "programme": programme_label(prev.programme),
+            "last_visit": {"date": prev.created_at.date().isoformat(), "programme": programme_label(prev.programme, prev.session_number),
                            "session_number": prev.session_number,
                            "next_session_date": prev.next_session_date.isoformat() if prev.next_session_date else None}
             if prev else None}
@@ -139,11 +139,12 @@ async def h_start_visit(layer: "ActionLayer", s: State, a: dict) -> dict:
     _require(s.client, "no_client", "Identify the client first.")
     text = (a.get("concern_text") or "").strip()
     _require(text, "no_concern", "Describe the client's concern.")
-    visit = await start_visit(layer.db, s.client, text, layer.user_id, summary=str(a.get("summary") or "")[:300] or None)
+    visit = await start_visit(layer.db, s.client, text, layer.user_id, summary=str(a.get("summary") or "")[:300] or None,
+                              service="medical" if a.get("service") == "medical" else None)
     s.conversation.visit_id = visit.id
     assessment = await assessment_svc.get_or_create(layer.db, visit, s.client)
     nq = assessment_svc.next_question(assessment, s.client)
-    return {"visit_id": str(visit.id), "programme": visit.programme, "programme_label": programme_label(visit.programme),
+    return {"visit_id": str(visit.id), "programme": visit.programme, "programme_label": programme_label(visit.programme, visit.session_number),
             "session_number": visit.session_number, "concerns": visit.concerns,
             "reused_answers": [k for k, v in (assessment.skipped or {}).items() if v == "reused_from_previous_visit"],
             "next_question": nq}
@@ -292,7 +293,9 @@ TOOLS: dict[str, Tool] = {t.name: t for t in [
          {"properties": {"full_name": {"type": "string"}, "dob": {"type": "string", "description": "YYYY-MM-DD"},
                          "gender": {"type": "string", "enum": ["female", "male", "other"]}}}, {"identify"},
          h_find_or_import_client),
-    Tool("start_visit", "Start the visit from the client's concern in their own words. Picks programme and session number.",
+    Tool("start_visit", "Start the visit from the client's concern in their own words. Files it under the clinic's service (Acne, "
+         "Pigmentation, Age or Skin Scription, Anti Aging, Medical Consultation; a returning client's next session is "
+         "its Follow Up / Medical Follow Up) and numbers the session.",
          {"properties": {"concern_text": {"type": "string"}}, "required": ["concern_text"]}, {"concern"}, h_start_visit),
     Tool("save_assessment", "Save the client's answer to the CURRENT Know your Skin question only, as {question_id: option value} (or text for text questions).",
          {"properties": {"answers": {"type": "object", "additionalProperties": {"type": "string"}}}, "required": ["answers"]},

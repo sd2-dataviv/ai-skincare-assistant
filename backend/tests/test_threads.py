@@ -86,7 +86,7 @@ async def test_client_asks_about_a_past_consultation(client, operator, doctor):
     assert "upcoming treatments" in out["messages"][-1]["content"].lower()
 
     threads = (await client.get("/api/me/threads", headers=h)).json()["threads"]
-    assert len(threads) == 1 and threads[0]["unread"] == 0 and threads[0]["title"].startswith("Acne Care Programme")
+    assert len(threads) == 1 and threads[0]["unread"] == 0 and threads[0]["title"].startswith("Acne Scription")
     # Nothing waits for staff
     q = (await client.get("/api/doctor/queue", headers=doctor)).json()
     assert q["counts"]["messages"] == 0
@@ -260,7 +260,7 @@ async def test_llm_answers_from_facts_and_cannot_claim_changes(client, operator,
     out = await say(client, h, tid, "How do I use the gel?")
     assert out["messages"][-1]["content"] == "Use the gel at night."
     facts = fake.seen[0][0]["content"]
-    assert "FACTS" in facts and "Acne Care Programme" in facts and "98765" not in facts
+    assert "FACTS" in facts and "Acne Scription" in facts and "98765" not in facts
 
     fake.content = '{"reply": "A doctor should look at that, so I have passed it to the clinic team.", "handover": true, ' \
                    '"reason": "dose question"}'

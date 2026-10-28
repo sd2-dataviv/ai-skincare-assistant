@@ -63,6 +63,15 @@ class Settings(BaseSettings):
     skin_post_treatment_timeout_s: float = 300.0  # inpainting is slow on a CPU
     skin_model_details_wait_s: float = 1.0  # wait for the findings after the image (updated services send them at once; older ones never)
     skin_model_retry_after_s: float = 60.0  # after a service fails, skip it for this long instead of waiting on it again
+    # The talking avatar (app/integrations/avatar.py; docs/09-avatar.md). The AI Avatar service says the assistant's
+    # replies in its Direct mode; the browser reaches it only through /api/avatar/ws. It signs in with the same platform
+    # session as the model gateway (the service account above). Empty URL = no avatar: the browser's own voice speaks.
+    avatar_ws_url: str | None = None  # e.g. wss://avatar.instaviv.in
+    avatar_id: int = 14  # the service's avatar catalogue: 14 Meera, 10 Raghav, 18 Vedant Sir
+    avatar_language: str = "en"
+    avatar_max_speech_chars: int = 1200  # longer replies are cut at a sentence end
+    avatar_connect_timeout_s: float = 10.0
+    avatar_idle_close_s: float = 600.0  # free the avatar after this long with nothing said; it reconnects on the next line
     d365_mode: str = "mock"  # mock | http
     d365_base_url: str | None = None
     otp_mode: str = "mock"  # mock | sms

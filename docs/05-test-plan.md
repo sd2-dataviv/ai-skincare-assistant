@@ -19,7 +19,7 @@ The tests run with `LLM_PROVIDER=scripted` (deterministic), the mock adapters, a
 |---|---|
 | FR-01 OTP | `test_full_consultation_happy_path`, `test_wrong_otp_then_right`, `test_message_exactly_once` |
 | FR-02 find, import or create | happy path (D365 import), `test_new_client_profile_capture`, `test_rest_actions_mirror_ai_actions` |
-| FR-03 / FR-04 visit, programme, concerns | happy path (Acne programme), returning client (session 2), `test_concern_detection_and_programme` |
+| FR-03 / FR-04 visit, service, concerns | happy path (Acne Scription), returning client (session 2), `test_concern_detection_and_programme`, `test_services.py` (each service picked from the client's words, follow-up names, old visits still counted, Anti Aging adds the doctor's consultation) |
 | FR-05 / FR-06 Know your Skin | `answer_all` in the flow tests, `test_parse_answer_variants`, `test_skin_type_derivation`, reuse in the returning-client test |
 | FR-07 guided capture | `test_quality_gates`, retake after a dark photo (happy path), e2e camera |
 | FR-08 / FR-09 analysis, improvement | happy path, `test_returning_client_compares_and_reuses_answers`, `test_compare_direction` |

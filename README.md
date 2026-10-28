@@ -10,6 +10,8 @@ An AI assistant runs the skin consultation that a doctor does by hand today:
 
 The doctor stays responsible: every plan is approved by a registered practitioner, and the AI hands the visit over automatically when a safety rule fires.
 
+Each visit is filed under one of the clinic's services: **Acne Scription, Pigmentation Scription, Age Scription, Skin Scription, Anti Aging** or **Medical Consultation**, picked from what the client says. A returning client's next session is its **Follow Up** (or **Medical Follow Up**). The services are set in `backend/app/knowledge/rules.json`.
+
 Afterwards, clients can chat about any past consultation on the clinic device or on their own phone (`/my`, mobile + OTP). The AI answers from the approved plan and hands over to the clinic team when a person is needed, and doctors and admins can message any client from the Messages tab.
 
 **Stack:** FastAPI and SQLAlchemy 2 (async) with PostgreSQL 16 and Alembic. React 18, TypeScript and Vite. OpenCV for photo quality gates. Groq (or any OpenAI-compatible LLM) for the conversation, with a deterministic offline fallback.
@@ -68,6 +70,15 @@ The doctor sees the pictures in review. The client sees them only once the plan 
 If a model server is down, the consultation carries on with estimates.
 
 [docs/07-skin-models.md](docs/07-skin-models.md) covers the protocol, the changes made to the two service folders, who sees what, and a stand-in server for demos (`make stand-in-models`).
+
+## The talking avatar
+
+On the clinic device, the clinic's AI Avatar service (Meera, `wss://avatar.instaviv.in`) says the assistant's replies
+with a face and voice. It runs in the service's Direct mode, so it says exactly what the assistant wrote; the app's
+own assistant still decides every word. Set `AVATAR_WS_URL=wss://avatar.instaviv.in` (and the platform service
+account used for the skin models). The browser reaches the avatar only through the API's relay
+(`/api/avatar/ws`), so the platform token stays on the server. Without it, or when the avatar can't be reached,
+the browser's own voice speaks as before. See [docs/09-avatar.md](docs/09-avatar.md).
 
 ## Signing in from WorkflowHub
 

@@ -66,7 +66,7 @@ async def test_concern_is_understood_and_acknowledged(client, operator, monkeypa
     await s.identify()
     out = await s.say("so basically my chin keeps breaking out and there are dark patches")
     texts = [m["content"] for m in out["messages"]]
-    assert texts[0].startswith("That sounds frustrating, Priya") and "Acne Care Programme" in texts[0]
+    assert texts[0].startswith("That sounds frustrating, Priya") and "Acne Scription" in texts[0]
     assert texts[1].startswith("A few hours after washing your face")  # verbatim question, no "Question 1 of 18"
     async with sessionmaker()() as db:
         act = (await db.execute(select(AIAction).where(AIAction.action == "start_visit"))).scalar_one()
