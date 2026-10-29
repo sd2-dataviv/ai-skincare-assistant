@@ -128,6 +128,12 @@ textarea { resize: vertical; }
 .mirror video.selfie { transform: scaleX(-1); }
 .mirror canvas.talking-avatar { object-fit: cover; object-position: 50% 18%; }
 .mirror canvas.talking-avatar[hidden] { display: none; }
+.mirror canvas.voice-orb { object-fit: fill; }
+.voice-chip {
+  position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%); z-index: 3;
+  font-size: 0.78rem; letter-spacing: 0.02em; padding: 0.2rem 0.65rem; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85); color: var(--ink-2); border: 1px solid var(--line);
+}
 .mirror .guide { position: absolute; inset: 14% 18% 10%; border: 2px dashed rgba(255, 255, 255, 0.85); border-radius: 50%; z-index: 3; }
 .avatar-face { position: absolute; inset: 0; display: grid; place-items: center; }
 .avatar-face svg { width: 62%; height: auto; }

@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
+import { VoiceOrb } from "../avatar/VoiceOrb";
 
 export interface MirrorHandle {
   capture: () => Promise<Blob | null>;
@@ -11,29 +12,23 @@ interface Props {
   handedOver: boolean;
   /** The talking avatar's canvas (src/avatar). Always mounted, so the avatar keeps its session while the camera is on. */
   avatarCanvasRef?: RefObject<HTMLCanvasElement>;
-  /** Show the talking avatar; otherwise the abstract face (no avatar set up, still connecting, or unavailable). */
+  /** Show the talking avatar; otherwise the voice orb (no avatar set up, still connecting, or unavailable). */
   showAvatar?: boolean;
+  /** The assistant is working out its reply (the orb turns slowly). */
+  thinking?: boolean;
+  /** 0..1 voice level for the orb while it speaks. */
+  voiceLevel?: () => number;
+  /** Voice-only mode: the avatar can't be used, so say so under the orb. */
+  voiceOnly?: boolean;
 }
 
 // An embedded stream page can replace the abstract face too (VITE_AVATAR_STREAM_URL); the clinic's AI Avatar service
 // (src/avatar) takes precedence when it is set up.
 const AVATAR_URL = import.meta.env.VITE_AVATAR_STREAM_URL as string | undefined;
 
-function AbstractFace({ speaking }: { speaking: boolean }) {
-  return (
-    <svg viewBox="0 0 120 150" aria-hidden>
-      <ellipse cx="60" cy="72" rx="44" ry="58" fill="#f3d6c6" />
-      <path d="M38 64 q8 -7 16 0" stroke="#1e2a2e" strokeWidth="3" fill="none" strokeLinecap="round" />
-      <path d="M66 64 q8 -7 16 0" stroke="#1e2a2e" strokeWidth="3" fill="none" strokeLinecap="round" />
-      <ellipse cx="60" cy="100" rx="11" ry={speaking ? 6 : 1.8} fill="#1e2a2e">
-        {speaking && <animate attributeName="ry" values="2;7;3;6;2" dur="0.9s" repeatCount="indefinite" />}
-      </ellipse>
-    </svg>
-  );
-}
-
 export const Mirror = forwardRef<MirrorHandle, Props>(function Mirror(
-  { mode, listening, speaking, handedOver, avatarCanvasRef, showAvatar = false }, ref) {
+  { mode, listening, speaking, handedOver, avatarCanvasRef, showAvatar = false, thinking = false, voiceLevel, voiceOnly = false },
+  ref) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [camError, setCamError] = useState<string | null>(null);
@@ -96,7 +91,10 @@ export const Mirror = forwardRef<MirrorHandle, Props>(function Mirror(
       ) : AVATAR_URL ? (
         <iframe src={AVATAR_URL} title="AI assistant" allow="autoplay; microphone" />
       ) : (
-        <div className="avatar-face"><AbstractFace speaking={speaking} /></div>
+        <>
+          <VoiceOrb state={speaking ? "speaking" : listening ? "listening" : thinking ? "thinking" : "idle"} level={voiceLevel} />
+          {voiceOnly && <span className="voice-chip">Voice only</span>}
+        </>
       )}
     </div>
   );

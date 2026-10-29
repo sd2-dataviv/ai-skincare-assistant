@@ -141,6 +141,7 @@ See [09-avatar.md](09-avatar.md).
 | Method | Path | Who | Notes |
 |---|---|---|---|
 | POST | `/avatar/session` | operator, admin | `{"ticket", "avatar_id", "language", "path"}`; the ticket lasts 60 s and opens one socket. 404 when `AVATAR_WS_URL` is empty |
+| POST | `/avatar/speech` | operator, admin | Voice-only mode: `{"text"}` → the reply as `audio/wav` in the avatar's voice. 404 not set up, 503 the speech engine can't be used (the browser then speaks) |
 | WS | `/avatar/ws?ticket=` | holder of a ticket | Relay to the AI Avatar service in Direct mode. Send `{"type":"speak","text"}`, `{"type":"stop"}` or `{"type":"language","value"}`; receive the avatar's frames. Closes 4401 bad ticket, 4502 account refused, 4503 no platform session, 4504 avatar unavailable, 4408 idle, 1011 service closed |
 
 ## Errors

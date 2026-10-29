@@ -5,8 +5,9 @@ import { Mirror, type MirrorHandle } from "../components/Mirror";
 import HistoryPanel from "../components/HistoryPanel";
 import ResultsPanel from "../components/ResultsPanel";
 import { useTalkingAvatar } from "../avatar/useTalkingAvatar";
+import { useVoice } from "../avatar/useVoice";
 import { api, ApiError, uid } from "../lib/api";
-import { speechInputSupported, speechOutputSupported, useSpeechInput, useSpeechOutput } from "../lib/speech";
+import { speechInputSupported, useSpeechInput } from "../lib/speech";
 import type { Message, TurnPayload, UiHints } from "../lib/types";
 
 const POLL_STAGES = new Set(["approval", "handed_over", "analyse", "recommend"]);
@@ -23,31 +24,33 @@ export default function Session() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"talk" | "results" | "history">("talk");
-  const [voiceOn, setVoiceOn] = useState(speechOutputSupported());
+  const [voiceOn, setVoiceOn] = useState(true);
   const [resultsVersion, setResultsVersion] = useState(0);
   const mirrorRef = useRef<MirrorHandle>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const spokenRef = useRef<Set<string>>(new Set((first?.messages ?? []).map((m) => m.id)));
 
-  const { speaking: browserSpeaking, speak: browserSpeak, cancel: browserCancel } = useSpeechOutput("en-IN");
-  // The clinic's talking avatar says the replies when it is set up and reachable; otherwise the browser's voice does.
+  // The clinic's talking avatar says the replies when it is set up and reachable. Otherwise voice-only mode does: a
+  // voice orb, with the avatar's own voice from its speech engine, or the browser's voice as a last resort.
+  const voice = useVoice("en-IN");
+  const { speak: voiceSpeak, cancel: voiceCancel } = voice;
   const avatar = useTalkingAvatar(ui !== null);
   const { speak: avatarSpeak, stop: avatarStop, onFallback } = avatar;
-  const speaking = browserSpeaking || avatar.speaking;
+  const speaking = voice.speaking || avatar.speaking;
   const voiceOnRef = useRef(voiceOn);
   voiceOnRef.current = voiceOn;
   const say = useCallback((lines: string[]) => {
     if (!lines.length) return;
-    if (!avatarSpeak(lines.join(" "))) lines.forEach(browserSpeak);
-  }, [avatarSpeak, browserSpeak]);
+    if (!avatarSpeak(lines.join(" "))) voiceSpeak(lines.join(" "));
+  }, [avatarSpeak, voiceSpeak]);
   const cancel = useCallback(() => {
-    browserCancel();
+    voiceCancel();
     avatarStop();
-  }, [browserCancel, avatarStop]);
+  }, [voiceCancel, avatarStop]);
   useEffect(() => onFallback((lines) => {
-    if (voiceOnRef.current) lines.forEach(browserSpeak);
-  }), [onFallback, browserSpeak]);
+    if (voiceOnRef.current && lines.length) voiceSpeak(lines.join(" "));
+  }), [onFallback, voiceSpeak]);
 
   const absorb = useCallback((payload: TurnPayload) => {
     setUi(payload.ui);
@@ -221,7 +224,8 @@ export default function Session() {
             <div style={{ display: "grid", gap: "0.9rem", justifyItems: "center", width: "100%" }}>
               <Mirror ref={mirrorRef} mode={cameraMode ? "camera" : "avatar"} listening={speech.listening}
                 speaking={speaking} handedOver={handedOver} avatarCanvasRef={avatar.canvasRef}
-                showAvatar={avatar.state === "ready" || avatar.state === "resting"} />
+                showAvatar={avatar.state === "ready" || avatar.state === "resting"} thinking={busy}
+                voiceLevel={voice.level} voiceOnly={avatar.state === "unavailable" || avatar.state === "off"} />
               <p className="mirror-status" aria-live="polite">{status}</p>
               {cameraMode && ui.camera && (
                 <div className="poses" aria-label="Photos">
@@ -255,11 +259,9 @@ export default function Session() {
             {avatar.state === "unavailable" && (
               <button className="btn quiet small" onClick={avatar.retry} title={avatar.detail}>Retry avatar</button>
             )}
-            {(speechOutputSupported() || avatar.active) && (
-              <button className="btn quiet small" onClick={() => { if (voiceOn) cancel(); setVoiceOn(!voiceOn); }} aria-pressed={voiceOn}>
-                {voiceOn ? "Voice on" : "Voice off"}
-              </button>
-            )}
+            <button className="btn quiet small" onClick={() => { if (voiceOn) cancel(); setVoiceOn(!voiceOn); }} aria-pressed={voiceOn}>
+              {voiceOn ? "Voice on" : "Voice off"}
+            </button>
             <button className="btn quiet small" onClick={() => { cancel(); nav("/"); }}>End session</button>
           </div>
         </section>

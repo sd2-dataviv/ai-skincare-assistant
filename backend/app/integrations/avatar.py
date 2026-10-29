@@ -86,6 +86,8 @@ def session_url(token: str, avatar_id: int, language: str) -> str:
 
 
 _MARKDOWN = re.compile(r"[*_`#>]+")
+_TITLE_WORDS = {"dr": "Doctor", "mr": "Mister", "mrs": "Missus"}
+_TITLES = re.compile(r"\b(Dr|Mr|Mrs)\.\s*", re.IGNORECASE)
 _SPACES = re.compile(r"\s+")
 
 
@@ -94,6 +96,7 @@ def speakable(text: str) -> str:
     t = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text or "")  # [label](url) -> label
     t = re.sub(r"https?://\S+", "", t)
     t = t.replace("•", " ").replace("·", " ")
+    t = _TITLES.sub(lambda m: _TITLE_WORDS[m.group(1).lower()] + " ", t)  # the voice reads "Dr." as "duh"
     t = _MARKDOWN.sub("", t)
     t = _SPACES.sub(" ", t).strip()
     cap = get_settings().avatar_max_speech_chars
@@ -148,8 +151,12 @@ class Relay:
         for attempt in (0, 1):
             token = await gateway_tokens.get(force=attempt == 1)
             if not token:
-                raise AvatarUnavailable(CLOSE_NO_SESSION, "The avatar needs a platform session: set the service "
-                                        "account (SKIN_MODEL_AUTH_EMAIL / SKIN_MODEL_AUTH_PASSWORD).")
+                from app.integrations import platform_auth
+
+                why = platform_auth.last_refusal
+                raise AvatarUnavailable(CLOSE_NO_SESSION, f"The avatar has no platform session: {why}." if why else
+                                        "The avatar needs a platform session: set the service account "
+                                        "(SKIN_MODEL_AUTH_EMAIL / SKIN_MODEL_AUTH_PASSWORD).")
             url = session_url(token, self.avatar_id, self.language)
             try:
                 up = await self.connect(url)
@@ -260,10 +267,48 @@ class Relay:
             log.info("[avatar] session closed for %s after %d lines", self.who, self.spoken)
 
 
+def tts_url() -> str | None:
+    """The avatar service's speech endpoint (https://<host>/tts/preview), from the avatar's socket address."""
+    s = get_settings()
+    if not s.avatar_ws_url or not s.avatar_voice:
+        return None
+    base = re.sub(r"^ws", "http", s.avatar_ws_url.rstrip("/"), count=1)  # wss -> https, ws -> http
+    return f"{base}/tts/preview"
+
+
+_tts_transport = None  # tests swap in a fake speech engine
+
+
+async def synthesise(text: str) -> bytes:
+    """Speech for one reply, in the avatar's voice (voice-only mode). Raises AvatarUnavailable when the engine can't
+    be used, so the browser falls back to its own voice."""
+    import httpx
+
+    s = get_settings()
+    url = tts_url()
+    line = speakable(text)
+    if not url or not line:
+        raise AvatarUnavailable(CLOSE_UNAVAILABLE, "Voice-only mode is not set up.")
+    try:
+        async with httpx.AsyncClient(timeout=s.avatar_tts_timeout_s, transport=_tts_transport) as c:
+            r = await c.get(url, params={"voice": s.avatar_voice, "lang": s.avatar_language, "text": line})
+    except httpx.HTTPError as e:
+        raise AvatarUnavailable(CLOSE_UPSTREAM, f"Can't reach the speech engine ({type(e).__name__}).") from None
+    if r.status_code != 200 or r.content[:4] != b"RIFF":
+        raise AvatarUnavailable(CLOSE_UPSTREAM, f"The speech engine answered {r.status_code}.")
+    return r.content
+
+
 def status() -> dict | None:
     """For /api/health: is the avatar on, and which one (never the token)."""
     s = get_settings()
     if not s.avatar_ws_url:
         return None
-    return {"service": s.avatar_ws_url, "avatar_id": s.avatar_id, "language": s.avatar_language,
-            "mode": "direct (says the assistant's replies)"}
+    from app.integrations import platform_auth
+
+    out = {"service": s.avatar_ws_url, "avatar_id": s.avatar_id, "language": s.avatar_language,
+           "mode": "direct (says the assistant's replies)",
+           "voice_only_fallback": f"voice {s.avatar_voice}" if tts_url() else "browser voice"}
+    if platform_auth.last_refusal and not gateway_tokens.access:
+        out["problem"] = platform_auth.last_refusal
+    return out

@@ -68,7 +68,7 @@ async def verify_platform_token(token: str) -> dict | None:
         return None
     if r.status_code != 200:
         # The body tells an expired token from one minted by another auth service; it is an error, not a credential.
-        log.warning("[SSO] token rejected by auth service (%s): %s", r.status_code, (r.text or "")[:200])
+        log.warning("[SSO] token rejected by auth service (%s): %s", r.status_code, refusal_reason(r))
         return None
     try:
         info = r.json()
@@ -85,10 +85,32 @@ class TokenPair:
     refresh: str | None
 
 
+last_refusal: str | None = None  # why the platform last refused a sign-in, for health and the avatar's message
+
+
+def refusal_reason(r: httpx.Response) -> str:
+    """The platform's reason code only (e.g. DEVICE_LIMIT_REACHED): never its full answer, which can list the
+    account's devices and addresses."""
+    try:
+        d = r.json().get("detail")
+    except (ValueError, AttributeError):
+        return str(r.status_code)
+    if isinstance(d, dict):
+        return str(d.get("code") or r.status_code)
+    return str(d)[:80] if d else str(r.status_code)
+
+
 async def _pair(r: httpx.Response, what: str) -> TokenPair | None:
+    global last_refusal
     if r.status_code not in (200, 201, 202):
-        log.warning("[gateway token] %s refused (%s): %s", what, r.status_code, (r.text or "")[:200])
+        reason = refusal_reason(r)
+        last_refusal = f"{what} refused ({r.status_code} {reason})"
+        if reason == "DEVICE_LIMIT_REACHED":
+            last_refusal += ": the account is signed in on its maximum number of devices; sign out of one"
+        log.warning("[gateway token] %s", last_refusal)
         return None
+    if what == "service account login":
+        last_refusal = None
     try:
         d = r.json()
         return TokenPair(d["access_token"], d.get("refresh_token"))
@@ -161,6 +183,8 @@ class GatewayTokens:
         self.renewed_at: float | None = None
 
     def reset(self) -> None:
+        global last_refusal
+        last_refusal = None
         self.access = self.refresh_token = self.source = None
         self.renewed_at = None
 
@@ -266,8 +290,11 @@ class GatewayTokens:
                 source = "fixed token (SKIN_MODEL_TOKEN)"
             else:
                 source = "none yet: sign in through WorkflowHub, or set a service account"
-        return {"source": source, "expires_in_s": int(exp - time.time()) if exp else None,
-                "refreshable": bool(self.refresh_token or self._service_account())}
+        out = {"source": source, "expires_in_s": int(exp - time.time()) if exp else None,
+               "refreshable": bool(self.refresh_token or self._service_account())}
+        if last_refusal and not self.access:
+            out["problem"] = last_refusal
+        return out
 
 
 gateway_tokens = GatewayTokens()

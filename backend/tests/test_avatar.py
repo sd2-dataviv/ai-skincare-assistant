@@ -123,6 +123,7 @@ async def run(browser: FakeBrowser, timeout: float = 5.0, until_done: bool = Tru
 def test_speakable_text():
     assert avatar.speakable("**Your plan**\n• Gentle cleanser  \n• See [the summary](https://x.y/s/abc)") == \
         "Your plan Gentle cleanser See the summary"
+    assert avatar.speakable("Dr. Kavya Rao will review this plan.") == "Doctor Kavya Rao will review this plan."
     long = "One sentence here. " * 200
     out = avatar.speakable(long)
     assert len(out) <= get_settings().avatar_max_speech_chars and out.endswith(".")
@@ -211,3 +212,62 @@ async def test_an_unavailable_avatar_and_an_idle_session_are_closed(service, mon
     browser = FakeBrowser()
     await run(browser, until_done=False)
     assert browser.closed[0] == avatar.CLOSE_IDLE
+
+
+async def test_a_full_device_limit_is_explained_and_not_logged_in_full(service, client, caplog):
+    """The platform caps an account at 4 signed-in devices. Its refusal lists the devices (and their addresses): only
+    the reason code may reach the log, the health check and the browser."""
+    from fastapi.responses import JSONResponse
+
+    from app.integrations import platform_auth
+
+    app = service.auth.app
+    app.router.routes = [r for r in app.router.routes if getattr(r, "path", "") != "/api/users/login"]
+
+    @app.post("/api/users/login")
+    def full(body: dict):
+        return JSONResponse(status_code=403, content={"detail": {
+            "code": "DEVICE_LIMIT_REACHED", "detail": "This account is already signed in on 4 devices.", "max_devices": 4,
+            "devices": [{"id": 97, "os": "Linux", "browser": "Chrome", "last_ip_address": "10.9.8.7"}]}})
+
+    browser = FakeBrowser()
+    with caplog.at_level("INFO"):
+        await run(browser, until_done=False)
+    code, reason = browser.closed
+    assert code == avatar.CLOSE_NO_SESSION and "DEVICE_LIMIT_REACHED" in reason
+    assert "10.9.8.7" not in caplog.text and "DEVICE_LIMIT_REACHED" in caplog.text
+    health = (await client.get("/api/health")).json()
+    assert "sign out of one" in health["avatar"]["problem"]
+    assert "10.9.8.7" not in json.dumps(health)
+    platform_auth.last_refusal = None
+
+
+async def test_voice_only_mode_speaks_in_the_avatars_voice(client, operator, doctor, monkeypatch):
+    """When the avatar can't be used, the replies are still said in its voice by the same service's speech engine."""
+    import httpx
+
+    s = get_settings()
+    seen = []
+
+    def engine(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url)
+        return httpx.Response(200, content=b"RIFF\x00\x00\x00\x00WAVEfmt ", headers={"content-type": "audio/wav"})
+
+    monkeypatch.setattr(avatar, "_tts_transport", httpx.MockTransport(engine))
+    monkeypatch.setattr(s, "avatar_ws_url", None)
+    assert (await client.post("/api/avatar/speech", json={"text": "Hello"}, headers=operator)).status_code == 404
+    monkeypatch.setattr(s, "avatar_ws_url", "wss://avatar.example")
+    assert (await client.post("/api/avatar/speech", json={"text": "Hello"}, headers=doctor)).status_code == 403
+
+    r = await client.post("/api/avatar/speech", json={"text": "**Dr. Kavya Rao** will review • your plan."}, headers=operator)
+    assert r.status_code == 200 and r.headers["content-type"] == "audio/wav" and r.content.startswith(b"RIFF")
+    url = seen[-1]
+    assert (url.scheme, url.host, url.path) == ("https", "avatar.example", "/tts/preview")
+    assert url.params["voice"] == "F1" and url.params["lang"] == "en"
+    assert url.params["text"] == "Doctor Kavya Rao will review your plan."
+
+    monkeypatch.setattr(avatar, "_tts_transport", httpx.MockTransport(lambda req: httpx.Response(500)))
+    r = await client.post("/api/avatar/speech", json={"text": "Hello"}, headers=operator)
+    assert r.status_code == 503  # the browser then uses its own voice
+    health = (await client.get("/api/health")).json()
+    assert health["avatar"]["voice_only_fallback"] == "voice F1"

@@ -36,20 +36,31 @@ browser (consultation screen)                 API (FastAPI)                     
 So the kiosk can't turn the avatar into a general chatbot, and the platform token never reaches the browser, a log
 or an error message.
 
-## When the avatar can't be used
+## When the avatar can't be used: voice-only mode
 
-The browser's own voice speaks instead, as before, in all of these cases:
+A Siri-style voice orb takes the avatar's place, with a small **Voice only** label, and the replies are still spoken:
+1. **The avatar's own voice.** `POST /api/avatar/speech` (operator or admin) asks the same service's speech engine
+   (`/tts/preview`, voice `AVATAR_VOICE`, default F1 = Meera) for the reply as a WAV. It needs no platform sign-in, so
+   it keeps working when the account is at its device limit. Measured on 29 Oct 2026: 21 s of speech in 0.4 s.
+2. **The browser's own voice**, when that engine can't be used (404 not set up, 503 or no answer). The engine is
+   tried again after a minute.
+
+The orb follows the voice: it swells with the real audio level of the avatar's voice (Web Audio analyser), with a
+lively stand-in for the browser's voice, pulses a ring while listening and turns slowly while the assistant thinks.
+`node e2e/voice-only.mjs` checks both layers in a browser (screenshots `voice-1-speaking.png`, `voice-2-idle.png`).
+
+Voice-only mode is used in all of these cases:
 
 | Situation | What happens |
 |---|---|
-| `AVATAR_WS_URL` empty | `/api/avatar/session` answers 404. The abstract face and browser voice are used. |
-| No platform session | Relay closes 4503 ("set the service account"). Browser voice; **Retry avatar** button. |
-| Account refused (401/403, or close 4401/4403) | One retry with a renewed token, then 4502. Browser voice; **Retry avatar**. |
-| Avatar missing or inactive (4404/4503 from the service) | 4504. Browser voice; **Retry avatar**. |
-| Service dropped | Three quick reconnects (1, 2, 4 s), then browser voice. |
+| `AVATAR_WS_URL` empty | `/api/avatar/session` answers 404. The orb with the browser's voice. |
+| No platform session (e.g. the account at its device limit) | Relay closes 4503 with the reason. Voice-only mode; **Retry avatar** button. |
+| Account refused (401/403, or close 4401/4403) | One retry with a renewed token, then 4502. Voice-only mode; **Retry avatar**. |
+| Avatar missing or inactive (4404/4503 from the service) | 4504. Voice-only mode; **Retry avatar**. |
+| Service dropped | Three quick reconnects (1, 2, 4 s), then voice-only mode. |
 | Nothing said for 10 minutes | 4408: the session is freed on the GPU. It reconnects for the next reply. |
 
-Lines queued when the avatar gives up are spoken by the browser, so nothing is lost.
+Lines queued when the avatar gives up are spoken in voice-only mode, so nothing is lost.
 
 **Behaviour on the clinic device:**
 - Pressing the microphone, or **Voice off**, stops the avatar mid-sentence.
@@ -65,6 +76,8 @@ Lines queued when the avatar gives up are spoken by the browser, so nothing is l
 | `AVATAR_MAX_SPEECH_CHARS` | `1200` | Longer replies are cut at a sentence end |
 | `AVATAR_CONNECT_TIMEOUT_S` | `10` | Time allowed to open the avatar session |
 | `AVATAR_IDLE_CLOSE_S` | `600` | Free the avatar after this long with nothing said |
+| `AVATAR_VOICE` | `F1` | Voice for voice-only mode (the service's Supertonic voices F1–F5, M1–M5); empty = browser voice |
+| `AVATAR_TTS_TIMEOUT_S` | `20` | Time allowed for the speech engine |
 
 `GET /api/health` shows `"avatar": {"service", "avatar_id", "language", "mode"}`, never the token.
 

@@ -72,6 +72,10 @@ class Settings(BaseSettings):
     avatar_max_speech_chars: int = 1200  # longer replies are cut at a sentence end
     avatar_connect_timeout_s: float = 10.0
     avatar_idle_close_s: float = 600.0  # free the avatar after this long with nothing said; it reconnects on the next line
+    # Voice-only mode (the avatar can't be used): the same service's speech engine says the replies in the avatar's
+    # voice (Supertonic F1 = Meera). It needs no platform sign-in. Empty = the browser's own voice.
+    avatar_voice: str = "F1"
+    avatar_tts_timeout_s: float = 20.0
     d365_mode: str = "mock"  # mock | http
     d365_base_url: str | None = None
     otp_mode: str = "mock"  # mock | sms
